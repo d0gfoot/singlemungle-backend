@@ -65,7 +65,10 @@
 
 - Spring Boot
 - Spring Data JPA
+- Flyway
 - RESTful API
+- springdoc-openapi / Swagger UI
+- Logback 기반 콘솔/파일 로그
 - Redis, 필요 시 도입 예정
 
 ### Database
@@ -82,6 +85,146 @@
 - GitHub Actions
 - Docker
 
+## 로컬 개발 환경
+
+### 환경 변수
+
+`.env.example`을 기준으로 루트 경로에 `.env`를 생성합니다. `.env`는 실제 토큰과 DB 비밀번호를 담는 파일이므로 Git에 커밋하지 않습니다.
+
+주요 설정:
+
+- `SPRING_PROFILES_ACTIVE`: 실행 프로필. 기본값은 `local`
+- `API_TOKEN`: 외부 API 연동 토큰
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`: PostgreSQL 접속 정보
+- `SWAGGER_ENABLED`: Swagger UI와 OpenAPI 문서 활성화 여부
+- `FLYWAY_ENABLED`: DB 마이그레이션 활성화 여부
+- `LOG_LEVEL_ROOT`, `LOG_LEVEL_APP`: 전체/애플리케이션 로그 레벨
+- `LOG_FILE_NAME`: 파일 로그 저장 경로
+- `REQUEST_LOGGING_ENABLED`: HTTP 요청 로그 활성화 여부
+
+### PostgreSQL 실행
+
+Docker Compose로 PostgreSQL을 실행합니다.
+
+```bash
+docker compose -f docker.yml up -d
+```
+
+DB 데이터까지 초기화하려면 다음 명령을 사용합니다.
+
+```bash
+docker compose -f docker.yml down -v
+```
+
+### 애플리케이션 실행
+
+```bash
+./gradlew bootRun
+```
+
+### 테스트
+
+```bash
+./gradlew test
+```
+
+## API 문서
+
+로컬 실행 후 Swagger UI는 다음 경로에서 확인합니다.
+
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- OpenAPI YAML: `http://localhost:8080/v3/api-docs.yaml`
+
+운영 환경에서 문서 노출이 필요 없으면 `.env`에 다음 값을 설정합니다.
+
+```properties
+SWAGGER_ENABLED=false
+```
+
+### 장소 API
+
+#### 주변 장소 조회
+
+현재 좌표 기준 반경 내 장소를 거리순으로 조회합니다. 케어 화면은 `HOSPITAL`, 뷰티 화면은 `BEAUTY`, 홈 추천은 `placeTypes`를 생략하거나 여러 값을 전달해서 사용합니다.
+
+```http
+GET /api/v1/places/nearby?latitude=37.4980000&longitude=127.0276000&radiusMeters=1000&placeTypes=HOSPITAL&limit=20
+```
+
+Query:
+
+- `latitude`: 현재 위도. 필수
+- `longitude`: 현재 경도. 필수
+- `radiusMeters`: 조회 반경 미터. 선택, 기본값 `3000`
+- `placeTypes`: 장소 타입. 선택, 복수 전달 가능. 생략 시 `HOSPITAL`, `BEAUTY`
+- `limit`: 최대 응답 개수. 선택, 기본값 `20`
+
+예시:
+
+```http
+GET /api/v1/places/nearby?latitude=37.4980000&longitude=127.0276000&radiusMeters=1000&placeTypes=HOSPITAL
+GET /api/v1/places/nearby?latitude=37.4980000&longitude=127.0276000&radiusMeters=1000&placeTypes=BEAUTY
+GET /api/v1/places/nearby?latitude=37.4980000&longitude=127.0276000&radiusMeters=2000&placeTypes=HOSPITAL&placeTypes=BEAUTY
+```
+
+Response:
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "요청 성공",
+  "data": {
+    "places": [
+      {
+        "placeId": 1,
+        "externalPlaceId": "12345",
+        "placeType": "HOSPITAL",
+        "name": "사랑동물병원",
+        "latitude": 37.4983,
+        "longitude": 127.0276,
+        "distanceMeters": 33,
+        "isOpen": true,
+        "ratingAverage": 4.5,
+        "reviewCount": 24
+      }
+    ]
+  }
+}
+```
+
+#### 장소 간단 정보 조회
+
+프론트가 Kakao 지도 API로 마킹한 장소의 외부 ID를 전달하면, 백엔드 DB에 저장된 운영시간/평점/리뷰 수 등 보강 정보를 반환합니다.
+
+```http
+GET /api/v1/places/summary?provider=KAKAO&externalPlaceIds=12345&externalPlaceIds=67890
+```
+
+#### 장소 상세 조회
+
+```http
+GET /api/v1/places/{placeId}
+```
+
+## 로그
+
+애플리케이션은 Logback 기반으로 콘솔 로그와 파일 로그를 함께 남깁니다.
+
+- 기본 파일 로그: `logs/singlemungle.log`
+- HTTP 요청 로그: `REQUEST_START`, `REQUEST_END`
+- 요청 추적 헤더: `X-Trace-Id`
+
+클라이언트가 `X-Trace-Id` 헤더를 보내면 동일 값을 응답 헤더와 로그 MDC에 사용합니다. 헤더가 없으면 서버에서 UUID를 생성합니다.
+
+로그 레벨은 `.env`에서 조정합니다.
+
+```properties
+LOG_LEVEL_ROOT=INFO
+LOG_LEVEL_APP=DEBUG
+REQUEST_LOGGING_ENABLED=true
+```
+
 ## 백엔드 개발 방향
 
 - 클라이언트는 React Native 앱이며, 백엔드는 RESTful API를 제공합니다.
@@ -89,6 +232,7 @@
 - 지도 기반 기능을 고려하여 장소, 위치, 좌표, 반경 검색 요구사항을 API 설계에 반영합니다.
 - 실시간 알림 기능은 초기에는 명확한 인터페이스를 먼저 설계하고, 구현 방식은 요구사항 확정 후 결정합니다.
 - 기능별 도메인 경계를 명확히 나누고, 서비스 확장 가능성을 고려하여 설계합니다.
+- DB 스키마 변경은 Flyway 마이그레이션과 JPA Entity를 함께 반영합니다.
 
 ## 팀 구성
 

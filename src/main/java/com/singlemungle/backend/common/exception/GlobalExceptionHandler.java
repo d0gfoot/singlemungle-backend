@@ -11,6 +11,15 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+	@ExceptionHandler(BusinessException.class)
+	public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
+		ErrorCode errorCode = exception.getErrorCode();
+
+		return ResponseEntity
+			.status(errorCode.getStatus())
+			.body(ApiResponse.fail(errorCode));
+	}
+
 	@ExceptionHandler({
 		MethodArgumentNotValidException.class,
 		HandlerMethodValidationException.class,

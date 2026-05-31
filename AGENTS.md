@@ -25,7 +25,10 @@
 - Java와 Spring Boot를 사용합니다.
 - 데이터 접근은 Spring Data JPA를 기본으로 합니다.
 - DB는 PostgreSQL을 기준으로 설계합니다.
+- DB 스키마 변경은 Flyway 마이그레이션으로 관리합니다.
 - API는 RESTful하게 설계합니다.
+- API 문서는 springdoc-openapi 기반 Swagger UI를 사용합니다.
+- 로그는 Logback 기반 콘솔/파일 로그와 요청 추적 로그를 사용합니다.
 - Redis는 필수 기술이 아니며, 캐시, 세션, 알림, 조회수, 랭킹 등 명확한 필요가 생길 때만 도입합니다.
 - CI/CD는 GitHub Actions와 Docker 사용을 전제로 합니다.
 
@@ -115,10 +118,22 @@
 - N+1 문제가 생길 수 있는 조회는 fetch join, EntityGraph, 전용 조회 DTO 등을 검토합니다.
 - 예외 응답은 일관된 형식으로 제공합니다.
 - 시간 값은 서버 내부에서 명확한 타입을 사용하고, API 응답 형식을 일관되게 유지합니다.
+- 신규 API를 추가할 때는 Swagger/OpenAPI 문서에서 의미가 드러나도록 태그, 요약, 요청/응답 DTO를 정리합니다.
+- 로그에는 비밀번호, 인증 토큰, 민감한 개인정보를 남기지 않습니다.
+- 요청 단위 추적이 필요한 로그는 `X-Trace-Id` 기반 MDC 값을 활용합니다.
+
+## 환경 설정 기준
+
+- 로컬 실행 값은 루트의 `.env`를 통해 주입합니다.
+- `.env`는 커밋하지 않고, 공유 가능한 키와 기본값은 `.env.example`에 반영합니다.
+- PostgreSQL 로컬 실행은 `docker.yml`의 Docker Compose 구성을 기준으로 합니다.
+- Swagger 노출 여부는 `SWAGGER_ENABLED`로 제어합니다.
+- 로그 레벨과 요청 로그 활성화 여부는 `LOG_LEVEL_ROOT`, `LOG_LEVEL_APP`, `REQUEST_LOGGING_ENABLED`로 제어합니다.
 
 ## 데이터 설계 원칙
 
 - PostgreSQL 사용을 전제로 타입과 인덱스를 설계합니다.
+- 테이블, 컬럼, 제약조건, 인덱스 변경은 `src/main/resources/db/migration`의 Flyway SQL과 JPA Entity를 함께 수정합니다.
 - 위치 기반 검색이 필요한 테이블은 위도, 경도 필드를 명확히 둡니다.
 - 반경 검색 성능이 중요해지는 시점에는 PostgreSQL 확장 기능 또는 별도 인덱싱 전략을 검토합니다.
 - 삭제 정책은 기능별로 물리 삭제와 소프트 삭제 중 적절히 선택하되, 사용자 데이터와 게시글/댓글 데이터는 복구 및 감사 가능성을 고려합니다.
