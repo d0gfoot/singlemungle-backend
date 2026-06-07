@@ -3,9 +3,10 @@ package com.singlemungle.backend.domain.place.repository;
 import java.util.List;
 
 import com.singlemungle.backend.domain.place.entity.Place;
-import com.singlemungle.backend.domain.place.entity.PlaceProvider;
 import com.singlemungle.backend.domain.place.entity.PlaceType;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,5 +30,13 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 		@Param("maxLongitude") java.math.BigDecimal maxLongitude
 	);
 
-	List<Place> findByProviderAndExternalPlaceIdIn(PlaceProvider provider, List<String> externalPlaceIds);
+	Page<Place> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+	Page<Place> findByPlaceTypeIn(List<PlaceType> placeTypes, Pageable pageable);
+
+	Page<Place> findByNameContainingIgnoreCaseAndPlaceTypeIn(
+		String name,
+		List<PlaceType> placeTypes,
+		Pageable pageable
+	);
 }

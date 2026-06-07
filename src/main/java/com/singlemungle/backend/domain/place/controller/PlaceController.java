@@ -4,10 +4,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.singlemungle.backend.common.response.ApiResponse;
+import com.singlemungle.backend.common.response.PageResponse;
 import com.singlemungle.backend.domain.place.dto.NearbyPlacesResponse;
 import com.singlemungle.backend.domain.place.dto.PlaceDetailResponse;
-import com.singlemungle.backend.domain.place.dto.PlaceSummaryResponse;
-import com.singlemungle.backend.domain.place.entity.PlaceProvider;
+import com.singlemungle.backend.domain.place.dto.PlaceListItemResponse;
 import com.singlemungle.backend.domain.place.entity.PlaceType;
 import com.singlemungle.backend.domain.place.service.PlaceQueryService;
 
@@ -15,8 +15,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,13 +42,16 @@ public class PlaceController {
 		this.placeQueryService = placeQueryService;
 	}
 
-	@GetMapping("/summary")
-	@Operation(summary = "장소 간단 정보 조회", description = "외부 장소 ID 목록으로 캐시된 장소의 간단한 정보를 조회합니다.")
-	public ApiResponse<List<PlaceSummaryResponse>> findPlaceSummaries(
-		@RequestParam PlaceProvider provider,
-		@RequestParam List<String> externalPlaceIds
+	@GetMapping
+	@Operation(summary = "장소 목록 조회", description = "DB에 저장된 장소를 장소명과 카테고리로 검색합니다.")
+	public ApiResponse<PageResponse<PlaceListItemResponse>> searchPlaces(
+		@RequestParam(required = false) String keyword,
+		@RequestParam(required = false) List<PlaceType> placeTypes,
+		@RequestParam(defaultValue = "0") @PositiveOrZero int page,
+		@RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
 	) {
-		return ApiResponse.success(placeQueryService.findPlaceSummaries(provider, externalPlaceIds));
+		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+		return ApiResponse.success(placeQueryService.searchPlaces(keyword, placeTypes, pageable));
 	}
 
 	@GetMapping("/{placeId}")

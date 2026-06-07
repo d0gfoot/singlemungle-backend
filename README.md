@@ -95,6 +95,8 @@
 
 - `SPRING_PROFILES_ACTIVE`: 실행 프로필. 기본값은 `local`
 - `API_TOKEN`: 외부 API 연동 토큰
+- `KAKAO_REST_API_KEY`: Kakao Local API 장소 수집용 REST API 키
+- `PLACE_IMPORT_CENTER_LATITUDE`, `PLACE_IMPORT_CENTER_LONGITUDE`, `PLACE_IMPORT_RADIUS_METERS`: 장소 수집 기준 좌표와 반경
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`: PostgreSQL 접속 정보
 - `SWAGGER_ENABLED`: Swagger UI와 OpenAPI 문서 활성화 여부
 - `FLYWAY_ENABLED`: DB 마이그레이션 활성화 여부
@@ -107,14 +109,45 @@
 Docker Compose로 PostgreSQL을 실행합니다.
 
 ```bash
-docker compose -f docker.yml up -d
+docker compose up -d
 ```
 
 DB 데이터까지 초기화하려면 다음 명령을 사용합니다.
 
 ```bash
-docker compose -f docker.yml down -v
+docker compose down -v
 ```
+
+### Kakao 장소 데이터 수집
+
+Kakao Local API를 사용해 동양미래대학교 기준 반경 내 동물병원/동물미용샵을 DB에 저장할 수 있습니다. 이 수집 작업은 백엔드 서버와 함께 실행되지 않고, 필요할 때 Python 스크립트로 일회성 실행합니다.
+
+```properties
+KAKAO_REST_API_KEY=your-kakao-rest-api-key
+PLACE_IMPORT_CENTER_LATITUDE=37.5006000
+PLACE_IMPORT_CENTER_LONGITUDE=126.8677000
+PLACE_IMPORT_RADIUS_METERS=1000
+```
+
+위 값을 `.env`에 설정하고 PostgreSQL을 실행한 뒤 다음 명령을 실행합니다. `psql` CLI가 필요합니다.
+
+```bash
+python3 scripts/import_kakao_places.py
+```
+
+DB에 넣기 전에 생성될 SQL만 확인하려면 다음처럼 실행합니다.
+
+```bash
+python3 scripts/import_kakao_places.py --dry-run
+```
+
+기본 수집 범위는 1km이며, 필요하면 실행 시점에 바꿀 수 있습니다.
+
+```bash
+python3 scripts/import_kakao_places.py --radius-meters 1500 --max-pages 5
+```
+
+이미 저장된 Kakao 장소는 `(provider, external_place_id)` 기준으로 중복 삽입하지 않고 최신 값으로 갱신합니다.
 
 ### 애플리케이션 실행
 
@@ -193,12 +226,41 @@ Response:
 }
 ```
 
-#### 장소 간단 정보 조회
+#### 장소 목록 조회
 
-프론트가 Kakao 지도 API로 마킹한 장소의 외부 ID를 전달하면, 백엔드 DB에 저장된 운영시간/평점/리뷰 수 등 보강 정보를 반환합니다.
+DB에 저장된 장소를 장소명과 카테고리로 조회합니다. `placeTypes`는 `HOSPITAL`, `BEAUTY` 값을 사용할 수 있으며 여러 번 전달할 수 있습니다.
 
 ```http
-GET /api/v1/places/summary?provider=KAKAO&externalPlaceIds=12345&externalPlaceIds=67890
+GET /api/v1/places?keyword=동물병원&placeTypes=HOSPITAL&page=0&size=20
+```
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "요청 성공",
+  "data": {
+    "content": [
+      {
+        "placeId": 1,
+        "placeType": "HOSPITAL",
+        "name": "사랑동물병원",
+        "address": "서울 강남구 역삼동 1",
+        "roadAddress": "서울 강남구 테헤란로 1",
+        "latitude": 37.4983,
+        "longitude": 127.0276,
+        "ratingAverage": 4.5,
+        "reviewCount": 24,
+        "isOpen": true,
+        "dayOfWeek": "MONDAY",
+        "openTime": "09:00",
+        "closeTime": "18:00"
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "hasNext": false
+  }
+}
 ```
 
 #### 장소 상세 조회

@@ -87,39 +87,59 @@ class PlaceControllerTest {
 	}
 
 	@Test
-	void findPlaceSummariesReturnsRequestedExternalPlaceOrder() throws Exception {
-		mockMvc.perform(get("/api/v1/places/summary")
-				.param("provider", "KAKAO")
-				.param("externalPlaceIds", "12345", "67890"))
+	void searchPlacesReturnsPagedPlacesFilteredByKeywordAndType() throws Exception {
+		mockMvc.perform(get("/api/v1/places")
+				.param("keyword", "동물병원")
+				.param("placeTypes", "HOSPITAL")
+				.param("page", "0")
+				.param("size", "20"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
-			.andExpect(jsonPath("$.data.length()").value(2))
-			.andExpect(jsonPath("$.data[0].externalPlaceId").value("12345"))
-			.andExpect(jsonPath("$.data[0].name").value("사랑동물병원"))
-			.andExpect(jsonPath("$.data[0].latitude").value(37.4983000))
-			.andExpect(jsonPath("$.data[0].longitude").value(127.0276000))
-			.andExpect(jsonPath("$.data[0].ratingAverage").value(4.5))
-			.andExpect(jsonPath("$.data[0].reviewCount").value(24))
-			.andExpect(jsonPath("$.data[0].isOpen").value(true))
-			.andExpect(jsonPath("$.data[0].dayOfWeek").value("MONDAY"))
-			.andExpect(jsonPath("$.data[0].openTime").value("09:00"))
-			.andExpect(jsonPath("$.data[0].closeTime").value("18:00"))
-			.andExpect(jsonPath("$.data[1].externalPlaceId").value("67890"))
-			.andExpect(jsonPath("$.data[1].name").value("튼튼동물병원"))
-			.andExpect(jsonPath("$.data[1].ratingAverage").value(2.5))
-			.andExpect(jsonPath("$.data[1].reviewCount").value(2));
+			.andExpect(jsonPath("$.data.content.length()").value(2))
+			.andExpect(jsonPath("$.data.page").value(0))
+			.andExpect(jsonPath("$.data.size").value(20))
+			.andExpect(jsonPath("$.data.hasNext").value(false))
+			.andExpect(jsonPath("$.data.content[0].placeId").isNumber())
+			.andExpect(jsonPath("$.data.content[0].placeType").value("HOSPITAL"))
+			.andExpect(jsonPath("$.data.content[0].name").value("사랑동물병원"))
+			.andExpect(jsonPath("$.data.content[0].address").value("서울 강남구 역삼동 1"))
+			.andExpect(jsonPath("$.data.content[0].roadAddress").value("서울 강남구 테헤란로 1"))
+			.andExpect(jsonPath("$.data.content[0].latitude").value(37.4983000))
+			.andExpect(jsonPath("$.data.content[0].longitude").value(127.0276000))
+			.andExpect(jsonPath("$.data.content[0].ratingAverage").value(4.5))
+			.andExpect(jsonPath("$.data.content[0].reviewCount").value(24))
+			.andExpect(jsonPath("$.data.content[0].isOpen").value(true))
+			.andExpect(jsonPath("$.data.content[0].dayOfWeek").value("MONDAY"))
+			.andExpect(jsonPath("$.data.content[0].openTime").value("09:00"))
+			.andExpect(jsonPath("$.data.content[0].closeTime").value("18:00"))
+			.andExpect(jsonPath("$.data.content[1].placeType").value("HOSPITAL"))
+			.andExpect(jsonPath("$.data.content[1].name").value("튼튼동물병원"))
+			.andExpect(jsonPath("$.data.content[1].ratingAverage").value(2.5))
+			.andExpect(jsonPath("$.data.content[1].reviewCount").value(2));
+	}
+
+	@Test
+	void searchPlacesReturnsBeautyPlacesFilteredByCategory() throws Exception {
+		mockMvc.perform(get("/api/v1/places")
+				.param("keyword", "몽실")
+				.param("placeTypes", "BEAUTY"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("SUCCESS"))
+			.andExpect(jsonPath("$.data.content.length()").value(1))
+			.andExpect(jsonPath("$.data.content[0].placeType").value("BEAUTY"))
+			.andExpect(jsonPath("$.data.content[0].name").value("몽실몽실펫살롱"));
 	}
 
 	@Test
 	void findPlaceDetailReturnsBusinessHoursServicesAndImages() throws Exception {
-		mockMvc.perform(get("/api/v1/places/summary")
-				.param("provider", "KAKAO")
-				.param("externalPlaceIds", "12345"))
+		mockMvc.perform(get("/api/v1/places")
+				.param("keyword", "사랑동물병원")
+				.param("placeTypes", "HOSPITAL"))
 			.andExpect(status().isOk())
 			.andDo(result -> {
 				String placeId = com.jayway.jsonpath.JsonPath.read(
 					result.getResponse().getContentAsString(),
-					"$.data[0].placeId"
+					"$.data.content[0].placeId"
 				).toString();
 
 				mockMvc.perform(get("/api/v1/places/{placeId}", placeId))

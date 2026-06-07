@@ -13,15 +13,15 @@ import java.util.stream.Collectors;
 
 import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
+import com.singlemungle.backend.common.response.PageResponse;
 import com.singlemungle.backend.domain.place.dto.BusinessHourResponse;
 import com.singlemungle.backend.domain.place.dto.NearbyPlaceItemResponse;
 import com.singlemungle.backend.domain.place.dto.NearbyPlacesResponse;
 import com.singlemungle.backend.domain.place.dto.PlaceDetailResponse;
-import com.singlemungle.backend.domain.place.dto.PlaceSummaryResponse;
+import com.singlemungle.backend.domain.place.dto.PlaceListItemResponse;
 import com.singlemungle.backend.domain.place.entity.Place;
 import com.singlemungle.backend.domain.place.entity.PlaceBusinessHour;
 import com.singlemungle.backend.domain.place.entity.PlaceImage;
-import com.singlemungle.backend.domain.place.entity.PlaceProvider;
 import com.singlemungle.backend.domain.place.entity.PlaceService;
 import com.singlemungle.backend.domain.place.entity.PlaceType;
 import com.singlemungle.backend.domain.place.repository.PlaceBusinessHourRepository;
@@ -30,6 +30,8 @@ import com.singlemungle.backend.domain.place.repository.PlaceRepository;
 import com.singlemungle.backend.domain.place.repository.PlaceServiceRepository;
 import com.singlemungle.backend.domain.place.service.MockPlaceReviewService.ReviewStat;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,20 +68,31 @@ public class PlaceQueryService {
 		this.clock = clock;
 	}
 
-	public List<PlaceSummaryResponse> findPlaceSummaries(
-		PlaceProvider provider,
-		List<String> externalPlaceIds
+	public PageResponse<PlaceListItemResponse> searchPlaces(
+		String keyword,
+		List<PlaceType> placeTypes,
+		Pageable pageable
 	) {
-		List<Place> places = placeRepository.findByProviderAndExternalPlaceIdIn(provider, externalPlaceIds);
-		Map<String, Place> placeMap = places.stream()
-			.collect(Collectors.toMap(Place::getExternalPlaceId, Function.identity()));
-		Map<Long, PlaceBusinessHour> businessHours = findTodayBusinessHours(places);
+		Page<Place> places = searchPlaceEntities(keyword, placeTypes, pageable);
+		Map<Long, PlaceBusinessHour> businessHours = findTodayBusinessHours(places.getContent());
 
-		return externalPlaceIds.stream()
-			.map(placeMap::get)
-			.filter(place -> place != null)
-			.map(place -> toPlaceSummary(place, businessHours.get(place.getId())))
-			.toList();
+		return PageResponse.from(places.map(place -> toPlaceListItem(place, businessHours.get(place.getId()))));
+	}
+
+	private Page<Place> searchPlaceEntities(String keyword, List<PlaceType> placeTypes, Pageable pageable) {
+		boolean hasKeyword = keyword != null && !keyword.isBlank();
+		boolean hasPlaceTypes = placeTypes != null && !placeTypes.isEmpty();
+
+		if (hasKeyword && hasPlaceTypes) {
+			return placeRepository.findByNameContainingIgnoreCaseAndPlaceTypeIn(keyword.trim(), placeTypes, pageable);
+		}
+		if (hasKeyword) {
+			return placeRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable);
+		}
+		if (hasPlaceTypes) {
+			return placeRepository.findByPlaceTypeIn(placeTypes, pageable);
+		}
+		return placeRepository.findAll(pageable);
 	}
 
 	public PlaceDetailResponse findPlaceDetail(Long placeId) {
@@ -215,14 +228,16 @@ public class PlaceQueryService {
 		);
 	}
 
-	private PlaceSummaryResponse toPlaceSummary(Place place, PlaceBusinessHour businessHour) {
+	private PlaceListItemResponse toPlaceListItem(Place place, PlaceBusinessHour businessHour) {
 		ReviewStat reviewStat = mockPlaceReviewService.getReviewStat(place.getExternalPlaceId());
 		LocalTime now = LocalTime.now(clock);
 
-		return new PlaceSummaryResponse(
-			place.getExternalPlaceId(),
+		return new PlaceListItemResponse(
 			place.getId(),
+			place.getPlaceType(),
 			place.getName(),
+			place.getAddress(),
+			place.getRoadAddress(),
 			place.getLatitude(),
 			place.getLongitude(),
 			reviewStat.ratingAverage(),

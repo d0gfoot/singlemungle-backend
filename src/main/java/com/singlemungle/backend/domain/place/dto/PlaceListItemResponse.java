@@ -2,10 +2,14 @@ package com.singlemungle.backend.domain.place.dto;
 
 import java.math.BigDecimal;
 
-public record PlaceSummaryResponse(
-	String externalPlaceId,
+import com.singlemungle.backend.domain.place.entity.PlaceType;
+
+public record PlaceListItemResponse(
 	Long placeId,
+	PlaceType placeType,
 	String name,
+	String address,
+	String roadAddress,
 	BigDecimal latitude,
 	BigDecimal longitude,
 	BigDecimal ratingAverage,
