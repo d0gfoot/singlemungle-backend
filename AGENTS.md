@@ -51,7 +51,7 @@
 
 초기 설계 시 다음 도메인을 우선 고려합니다.
 
-- `Member`: 회원
+- `User`: 회원
 - `Pet`: 반려동물 프로필
 - `Place`: 병원, 미용샵, 동반 가능 장소 등 지도 기반 장소
 - `Event`: 반려동물 관련 행사
@@ -66,6 +66,30 @@
 
 도메인 이름과 구조는 실제 구현 과정에서 조정할 수 있지만, 기능 경계는 위 요구사항을 기준으로 유지합니다.
 
+## 현재 구현 기준
+
+- 현재 Git에 추적되는 실제 구현 도메인은 `place`입니다.
+- `place` 도메인은 `controller`, `dto`, `entity`, `repository`, `service` 구조를 사용합니다.
+- `common`에는 설정, 예외, 로그, 공통 응답을 둡니다.
+- 케어 기능 확장을 위해 로컬에서 `pet`, `health`, `schedule`, `user` 패키지 구조를 검토했습니다.
+- 빈 디렉터리는 Git에 추적되지 않으므로, 패키지 골격만 필요한 경우 커밋에는 포함되지 않습니다.
+- 빈 디렉터리를 반드시 원격 저장소에 남겨야 한다면 팀 합의 후 `.gitkeep` 사용 여부를 결정합니다.
+
+권장 도메인 패키지 구조:
+
+```text
+domain/{domain-name}/
+  controller/
+  service/
+  repository/
+  entity/
+  dto/
+    request/
+    response/
+```
+
+Java 패키지명은 모두 소문자를 사용합니다. `Schedule`처럼 대문자로 시작하는 패키지는 만들지 않고 `schedule`을 사용합니다.
+
 ## 서비스별 요구사항
 
 ### 케어
@@ -74,6 +98,8 @@
 - 병원 위치 기반 탐색을 고려합니다.
 - 네이버 예약 URL을 제공합니다.
 - 반려동물 건강 기록 CRUD를 제공합니다.
+- 케어 기능은 하나의 거대한 `care` 패키지보다 `pet`, `health`, `schedule` 도메인으로 나누어 구현합니다.
+- 반려동물 프로필은 여러 서비스에서 참조되므로 `pet`을 독립 도메인으로 둡니다.
 
 ### 뷰티
 
@@ -121,12 +147,14 @@
 - 신규 API를 추가할 때는 Swagger/OpenAPI 문서에서 의미가 드러나도록 태그, 요약, 요청/응답 DTO를 정리합니다.
 - 로그에는 비밀번호, 인증 토큰, 민감한 개인정보를 남기지 않습니다.
 - 요청 단위 추적이 필요한 로그는 `X-Trace-Id` 기반 MDC 값을 활용합니다.
+- 생성/수정 요청은 `dto/request`, 조회 응답은 `dto/response` 하위 패키지 사용을 우선합니다.
+- Entity를 새로 추가할 때는 Repository, Service, Controller를 기계적으로 모두 만들지 않습니다. 실제 API나 비즈니스 로직이 필요한 시점에 추가합니다.
 
 ## 환경 설정 기준
 
 - 로컬 실행 값은 루트의 `.env`를 통해 주입합니다.
 - `.env`는 커밋하지 않고, 공유 가능한 키와 기본값은 `.env.example`에 반영합니다.
-- PostgreSQL 로컬 실행은 `docker.yml`의 Docker Compose 구성을 기준으로 합니다.
+- PostgreSQL 로컬 실행은 `docker-compose.yml`의 Docker Compose 구성을 기준으로 합니다.
 - Swagger 노출 여부는 `SWAGGER_ENABLED`로 제어합니다.
 - 로그 레벨과 요청 로그 활성화 여부는 `LOG_LEVEL_ROOT`, `LOG_LEVEL_APP`, `REQUEST_LOGGING_ENABLED`로 제어합니다.
 
@@ -152,6 +180,8 @@
 - 컨트롤러 API는 주요 성공/실패 케이스를 테스트합니다.
 - Repository 테스트는 복잡한 쿼리 또는 위치 기반 조회처럼 위험도가 있는 경우 작성합니다.
 - 테스트 데이터는 의미가 드러나는 이름을 사용합니다.
+- 현재 테스트 프로필은 Flyway와 `ddl-auto=validate`를 사용하므로, Entity와 마이그레이션이 불일치하면 테스트가 실패해야 정상입니다.
+- 변경 후 기본 검증 명령은 `./gradlew test`입니다.
 
 ## 협업 기준
 

@@ -85,6 +85,82 @@
 - GitHub Actions
 - Docker
 
+## 현재 구현 상태
+
+- 공통 응답 포맷: `ApiResponse`, `PageResponse`
+- 공통 예외 처리: `BusinessException`, `ErrorCode`, `GlobalExceptionHandler`
+- 요청 로그: `X-Trace-Id` 기반 요청 추적 로그
+- API 문서: springdoc-openapi 기반 Swagger UI
+- DB 마이그레이션: Flyway SQL 마이그레이션
+- 장소 도메인:
+  - 장소 목록 조회
+  - 장소 상세 조회
+  - 현재 좌표 기준 주변 장소 조회
+  - 동물병원 `HOSPITAL`, 미용샵 `BEAUTY` 장소 타입 지원
+  - Kakao Local API 기반 장소 데이터 수집 스크립트
+- 테스트:
+  - 공통 응답 JSON 테스트
+  - 요청 로그 필터 테스트
+  - 장소 컨트롤러 테스트
+  - 장소 엔티티 매핑 테스트
+
+## 프로젝트 구조
+
+```text
+src/main/java/com/singlemungle/backend
+  common/
+    config/
+    exception/
+    logging/
+    response/
+  domain/
+    place/
+      controller/
+      dto/
+      entity/
+      importer/
+      repository/
+      service/
+```
+
+현재 Git에 추적되는 실제 구현 도메인은 `place`입니다. 로컬 작업 중 `pet`, `health`, `schedule`, `user` 도메인 패키지 골격을 검토했지만, 빈 디렉터리는 Git이 추적하지 않으므로 커밋 대상에는 포함되지 않습니다.
+
+추후 케어 기능을 구현할 때는 다음 구조를 기준으로 확장합니다.
+
+```text
+domain/
+  pet/
+    controller/
+    service/
+    repository/
+    entity/
+    dto/request/
+    dto/response/
+  health/
+    controller/
+    service/
+    repository/
+    entity/
+    dto/request/
+    dto/response/
+  schedule/
+    controller/
+    service/
+    repository/
+    entity/
+    dto/request/
+    dto/response/
+  user/
+    controller/
+    service/
+    repository/
+    entity/
+    dto/request/
+    dto/response/
+```
+
+Java 패키지명은 모두 소문자를 사용합니다. 예를 들어 `Schedule`이 아니라 `schedule`을 사용합니다.
+
 ## 로컬 개발 환경
 
 ### 환경 변수
@@ -160,6 +236,8 @@ python3 scripts/import_kakao_places.py --radius-meters 1500 --max-pages 5
 ```bash
 ./gradlew test
 ```
+
+현재 테스트 환경은 H2를 PostgreSQL 모드로 사용하며, `spring.jpa.hibernate.ddl-auto=validate`와 Flyway 마이그레이션 검증을 함께 사용합니다. Entity를 추가하거나 테이블 구조를 바꾸면 `src/main/resources/db/migration`에 새 마이그레이션 파일도 함께 추가해야 합니다.
 
 ## API 문서
 
@@ -295,6 +373,7 @@ REQUEST_LOGGING_ENABLED=true
 - 실시간 알림 기능은 초기에는 명확한 인터페이스를 먼저 설계하고, 구현 방식은 요구사항 확정 후 결정합니다.
 - 기능별 도메인 경계를 명확히 나누고, 서비스 확장 가능성을 고려하여 설계합니다.
 - DB 스키마 변경은 Flyway 마이그레이션과 JPA Entity를 함께 반영합니다.
+- 케어 기능은 `pet`, `health`, `schedule` 도메인을 분리하여 구현합니다.
 
 ## 팀 구성
 
