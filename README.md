@@ -98,11 +98,17 @@
   - 현재 좌표 기준 주변 장소 조회
   - 동물병원 `HOSPITAL`, 미용샵 `BEAUTY` 장소 타입 지원
   - Kakao Local API 기반 장소 데이터 수집 스크립트
+- 케어 도메인:
+  - 반려동물 프로필 API
+  - 건강 기록 API
+  - 일정 관리 API
+  - 마이페이지 사용자 수정/탈퇴 API
 - 테스트:
   - 공통 응답 JSON 테스트
   - 요청 로그 필터 테스트
   - 장소 컨트롤러 테스트
   - 장소 엔티티 매핑 테스트
+  - 케어 API 컨트롤러 테스트
 
 ## 프로젝트 구조
 
@@ -123,9 +129,9 @@ src/main/java/com/singlemungle/backend
       service/
 ```
 
-현재 Git에 추적되는 실제 구현 도메인은 `place`입니다. 로컬 작업 중 `pet`, `health`, `schedule`, `user` 도메인 패키지 골격을 검토했지만, 빈 디렉터리는 Git이 추적하지 않으므로 커밋 대상에는 포함되지 않습니다.
+현재 Git에 추적되는 주요 구현 도메인은 `place`, `pet`, `health`, `schedule`, `user`입니다.
 
-추후 케어 기능을 구현할 때는 다음 구조를 기준으로 확장합니다.
+케어 기능은 다음 구조를 기준으로 구현합니다.
 
 ```text
 domain/
