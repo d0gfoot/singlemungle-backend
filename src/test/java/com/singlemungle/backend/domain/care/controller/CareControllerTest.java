@@ -11,10 +11,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.singlemungle.backend.domain.auth.service.JwtTokenService;
+import com.singlemungle.backend.domain.user.entity.UserRole;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -28,9 +32,13 @@ class CareControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private JwtTokenService jwtTokenService;
+
 	@Test
 	void getMyPetsReturnsOnlyMockUserPets() throws Exception {
-		mockMvc.perform(get("/api/v1/pets"))
+		mockMvc.perform(get("/api/v1/pets")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
 			.andExpect(jsonPath("$.data.length()").value(1))
@@ -41,6 +49,7 @@ class CareControllerTest {
 	@Test
 	void addPetValidatesRequiredName() throws Exception {
 		mockMvc.perform(post("/api/v1/pets")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
 					{
@@ -53,25 +62,29 @@ class CareControllerTest {
 
 	@Test
 	void deletePetReturnsNotFoundWhenPetBelongsToAnotherUser() throws Exception {
-		mockMvc.perform(delete("/api/v1/pets/{petId}", 102))
+		mockMvc.perform(delete("/api/v1/pets/{petId}", 102)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("PET_NOT_FOUND"));
 	}
 
 	@Test
 	void deletePetReturnsSuccessWhenPetBelongsToMockUser() throws Exception {
-		mockMvc.perform(delete("/api/v1/pets/{petId}", 101))
+		mockMvc.perform(delete("/api/v1/pets/{petId}", 101)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("SUCCESS"));
 	}
 
 	@Test
 	void deletePetSoftDeletesPetFromMyPetList() throws Exception {
-		mockMvc.perform(delete("/api/v1/pets/{petId}", 101))
+		mockMvc.perform(delete("/api/v1/pets/{petId}", 101)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("SUCCESS"));
 
-		mockMvc.perform(get("/api/v1/pets"))
+		mockMvc.perform(get("/api/v1/pets")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
 			.andExpect(jsonPath("$.data.length()").value(0));
@@ -79,14 +92,16 @@ class CareControllerTest {
 
 	@Test
 	void getHealthRecordsRequiresOwnedPet() throws Exception {
-		mockMvc.perform(get("/api/v1/care/pets/{petId}/health-records", 102))
+		mockMvc.perform(get("/api/v1/care/pets/{petId}/health-records", 102)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("PET_NOT_FOUND"));
 	}
 
 	@Test
 	void getHealthRecordDetailRequiresMatchingPetId() throws Exception {
-		mockMvc.perform(get("/api/v1/care/pets/{petId}/health-records/{recordId}", 101, 202))
+		mockMvc.perform(get("/api/v1/care/pets/{petId}/health-records/{recordId}", 101, 202)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("HEALTH_RECORD_NOT_FOUND"));
 	}
@@ -94,6 +109,7 @@ class CareControllerTest {
 	@Test
 	void updateHealthRecordRequiresMatchingPetId() throws Exception {
 		mockMvc.perform(patch("/api/v1/care/pets/{petId}/health-records/{recordId}", 101, 202)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
 					{
@@ -106,7 +122,8 @@ class CareControllerTest {
 
 	@Test
 	void deleteHealthRecordRequiresMatchingPetId() throws Exception {
-		mockMvc.perform(delete("/api/v1/care/pets/{petId}/health-records/{recordId}", 101, 202))
+		mockMvc.perform(delete("/api/v1/care/pets/{petId}/health-records/{recordId}", 101, 202)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("HEALTH_RECORD_NOT_FOUND"));
 	}
@@ -114,6 +131,7 @@ class CareControllerTest {
 	@Test
 	void addHealthRecordValidatesRequiredFields() throws Exception {
 		mockMvc.perform(post("/api/v1/care/pets/{petId}/health-records", 101)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
 					{
@@ -127,6 +145,7 @@ class CareControllerTest {
 	@Test
 	void addHealthRecordRequiresOwnedPet() throws Exception {
 		mockMvc.perform(post("/api/v1/care/pets/{petId}/health-records", 102)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
 					{
@@ -141,7 +160,8 @@ class CareControllerTest {
 
 	@Test
 	void deleteScheduleReturnsNotFoundWhenScheduleBelongsToAnotherUser() throws Exception {
-		mockMvc.perform(delete("/api/v1/schedules/{scheduleId}", 302))
+		mockMvc.perform(delete("/api/v1/schedules/{scheduleId}", 302)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("SCHEDULE_NOT_FOUND"));
 	}
@@ -149,6 +169,7 @@ class CareControllerTest {
 	@Test
 	void updateScheduleReturnsSuccessWhenScheduleBelongsToMockUser() throws Exception {
 		mockMvc.perform(patch("/api/v1/schedules/{scheduleId}", 301)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
 					{
@@ -163,6 +184,7 @@ class CareControllerTest {
 	@Test
 	void addScheduleValidatesRequiredFields() throws Exception {
 		mockMvc.perform(post("/api/v1/schedules")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
 					{
@@ -176,6 +198,7 @@ class CareControllerTest {
 	@Test
 	void addScheduleRequiresOwnedPetWhenPetIdProvided() throws Exception {
 		mockMvc.perform(post("/api/v1/schedules")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
 					{
@@ -192,6 +215,7 @@ class CareControllerTest {
 	@Test
 	void updateScheduleRequiresOwnedPetWhenPetIdProvided() throws Exception {
 		mockMvc.perform(patch("/api/v1/schedules/{scheduleId}", 301)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
 					{
@@ -200,5 +224,9 @@ class CareControllerTest {
 					"""))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("PET_NOT_FOUND"));
+	}
+
+	private String bearerToken() {
+		return "Bearer " + jwtTokenService.createAccessToken(1L, UserRole.USER);
 	}
 }
