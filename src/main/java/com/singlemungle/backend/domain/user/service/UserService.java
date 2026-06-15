@@ -22,7 +22,8 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserInfoResponse getUserInfo(Long userId) {
         User u = findActiveUser(userId);
-        return new UserInfoResponse(u.getId(), u.getNickname(), u.getPhone());
+        String provider = (u.getOauthProvider() != null) ? u.getOauthProvider().name() : "NONE";
+        return new UserInfoResponse(u.getId(), u.getNickname(), u.getPhone(), provider);
     }
 
     @Transactional

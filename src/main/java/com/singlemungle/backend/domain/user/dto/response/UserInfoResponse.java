@@ -11,6 +11,9 @@ public record UserInfoResponse(
         String nickname,
 
         @Schema(description = "전화번호", example = "010-1234-5678")
-        String phone
+        String phone,
+
+        @Schema(description = "소셜 로그인 제공자", example = "KAKAO")
+        String oauthProvider
 ) {
 }
