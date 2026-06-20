@@ -11,30 +11,30 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	@ExceptionHandler(BusinessException.class)
-	public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
-		ErrorCode errorCode = exception.getErrorCode();
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
+        ErrorCode errorCode = exception.getErrorCode();
 
-		return ResponseEntity
-			.status(errorCode.getStatus())
-			.body(ApiResponse.fail(errorCode));
-	}
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.fail(errorCode));
+    }
 
-	@ExceptionHandler({
-		MethodArgumentNotValidException.class,
-		HandlerMethodValidationException.class,
-		IllegalArgumentException.class
-	})
-	public ResponseEntity<ApiResponse<Void>> handleInvalidRequest(Exception exception) {
-		return ResponseEntity
-			.status(ErrorCode.INVALID_REQUEST.getStatus())
-			.body(ApiResponse.fail(ErrorCode.INVALID_REQUEST));
-	}
+    @ExceptionHandler({
+            MethodArgumentNotValidException.class,
+            HandlerMethodValidationException.class,
+            IllegalArgumentException.class
+    })
+    public ResponseEntity<ApiResponse<Void>> handleInvalidRequest(Exception exception) {
+        return ResponseEntity
+                .status(ErrorCode.INVALID_REQUEST.getStatus())
+                .body(ApiResponse.fail(ErrorCode.INVALID_REQUEST));
+    }
 
-	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ApiResponse<Void>> handleException(Exception exception) {
-		return ResponseEntity
-			.status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
-			.body(ApiResponse.fail(ErrorCode.INTERNAL_SERVER_ERROR));
-	}
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Void>> handleException(Exception exception) {
+        return ResponseEntity
+                .status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
+                .body(ApiResponse.fail(ErrorCode.INTERNAL_SERVER_ERROR));
+    }
 }

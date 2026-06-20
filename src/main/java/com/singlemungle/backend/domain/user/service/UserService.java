@@ -6,6 +6,7 @@ import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 import com.singlemungle.backend.domain.user.entity.User;
 import com.singlemungle.backend.domain.user.repository.UserRepository;
+import com.singlemungle.backend.domain.user.dto.response.UserInfoResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepo;
+
+    @Transactional(readOnly = true)
+    public UserInfoResponse getUserInfo(Long userId) {
+        User u = findActiveUser(userId);
+        String provider = (u.getOauthProvider() != null) ? u.getOauthProvider().name() : "NONE";
+        return new UserInfoResponse(u.getId(), u.getNickname(), u.getPhone(), provider);
+    }
 
     @Transactional
     public void updateUserInfo(Long userId, String nickname, String phone) {
