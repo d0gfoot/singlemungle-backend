@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 
 import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
+import com.singlemungle.backend.domain.user.dto.response.UserInfoResponse;
 import com.singlemungle.backend.domain.user.entity.User;
 import com.singlemungle.backend.domain.user.repository.UserRepository;
-import com.singlemungle.backend.domain.user.dto.response.UserInfoResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,8 +29,8 @@ public class UserService {
     @Transactional
     public void updateUserInfo(Long userId, String nickname, String phone) {
         User u = findActiveUser(userId);
-        if(nickname != null) u.setNickname(nickname);
-        if(phone != null) u.setPhone(phone);
+        if (nickname != null) u.setNickname(nickname);
+        if (phone != null) u.setPhone(phone);
         u.setUpdatedAt(LocalDateTime.now());
     }
 
