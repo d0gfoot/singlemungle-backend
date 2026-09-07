@@ -1,6 +1,8 @@
 package com.singlemungle.backend.domain.walk.dto.request;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -39,11 +41,8 @@ public record WalkCreateRequest(
         @Min(1)
         Integer durationMinutes,
 
-        @Schema(
-                description = "GPS 산책 경로 JSON 데이터",
-                example = "[{\"latitude\":37.4983,\"longitude\":127.0276}]"
-        )
-        String routeData,
+        @Schema(description = "GPS 산책 경로")
+        List<RoutePoint> routeData,
 
         @Schema(
                 description = "산책 메모",
@@ -51,4 +50,9 @@ public record WalkCreateRequest(
         )
         String memo
 ) {
+        public record RoutePoint(
+                Double latitude,
+                Double longitude
+        ) {
+        }
 }

@@ -3,6 +3,10 @@ package com.singlemungle.backend.domain.walk.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 import com.singlemungle.backend.domain.pet.entity.Pet;
@@ -28,6 +32,7 @@ public class WalkService {
 
     private final WalkRepository walkRepository;
     private final PetRepository petRepository;
+    private final ObjectMapper objectMapper;
 
 
     /**
@@ -146,9 +151,13 @@ public class WalkService {
         );
 
         // GPS 경로
-        walk.setRouteData(
-                request.routeData()
-        );
+        List<Map<String, Object>> routeData =
+                objectMapper.convertValue(
+                        request.routeData(),
+                        new TypeReference<List<Map<String, Object>>>() {}
+                );
+
+        walk.setRouteData(routeData);
 
         // 메모
         walk.setMemo(
@@ -260,6 +269,21 @@ public class WalkService {
     private WalkResponse toResponse(
             Walk walk
     ) {
+        String routeDataJson = null;
+
+        if (walk.getRouteData() != null) {
+            try {
+                routeDataJson =
+                        objectMapper.writeValueAsString(
+                                walk.getRouteData()
+                        );
+            } catch (JsonProcessingException e) {
+                throw new BusinessException(
+                        ErrorCode.INTERNAL_SERVER_ERROR
+                );
+            }
+        }
+
         return new WalkResponse(
                 walk.getId(),
                 walk.getStartedAt(),
@@ -267,7 +291,7 @@ public class WalkService {
                 walk.getDistanceKm(),
                 walk.getDurationMinutes(),
                 walk.getCalories(),
-                walk.getRouteData(),
+                routeDataJson,
                 walk.getMemo()
         );
     }

@@ -1,6 +1,8 @@
 package com.singlemungle.backend.domain.walk.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -9,7 +11,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 @Entity
 @Table(name = "walk_records")
 @Getter
@@ -41,8 +44,9 @@ public class Walk {
     @Column(name = "calories")
     private Integer calories;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "route_data", columnDefinition = "jsonb")
-    private String routeData;
+    private List<Map<String, Object>> routeData;
 
     @Column(name = "memo")
     private String memo;
