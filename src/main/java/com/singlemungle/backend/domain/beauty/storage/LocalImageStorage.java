@@ -56,6 +56,25 @@ public class LocalImageStorage implements ImageStorage {
 		return new FileSystemResource(path);
 	}
 
+	@Override
+	public void delete(String imageUrl) {
+		if (imageUrl == null || imageUrl.isBlank() || !imageUrl.startsWith(baseUrl + "/")) {
+			return;
+		}
+
+		String fileName = imageUrl.substring((baseUrl + "/").length());
+		Path path = directory.resolve(fileName).normalize();
+		if (!path.startsWith(directory.normalize())) {
+			return;
+		}
+
+		try {
+			Files.deleteIfExists(path);
+		} catch (IOException exception) {
+			throw new BusinessException(ErrorCode.IMAGE_GENERATION_FAILED);
+		}
+	}
+
 	private String extension(String mimeType) {
 		return EXTENSIONS.getOrDefault(mimeType, ".bin");
 	}

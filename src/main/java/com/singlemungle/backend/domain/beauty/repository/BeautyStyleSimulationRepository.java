@@ -1,6 +1,7 @@
 package com.singlemungle.backend.domain.beauty.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulation;
@@ -18,4 +19,6 @@ public interface BeautyStyleSimulationRepository extends JpaRepository<BeautySty
 		LocalDateTime now,
 		Pageable pageable
 	);
+
+	List<BeautyStyleSimulation> findByExpiresAtBefore(LocalDateTime now);
 }

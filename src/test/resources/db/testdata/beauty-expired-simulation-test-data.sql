@@ -1,0 +1,48 @@
+insert into beauty_style_simulations (
+	id,
+	user_id,
+	pet_id,
+	shop_id,
+	style_keyword,
+	source_image_url,
+	style_image_url,
+	generated_image_url,
+	storage_provider,
+	status,
+	failure_reason,
+	expires_at,
+	created_at,
+	deleted_at
+) values
+	(
+		901,
+		1,
+		101,
+		301,
+		'곰돌이컷',
+		'/api/v1/beauty/style-simulations/images/source-expired.png',
+		null,
+		'/api/v1/beauty/style-simulations/images/generated-expired.png',
+		'LOCAL',
+		'COMPLETED',
+		null,
+		timestamp '2026-01-01 00:00:00',
+		timestamp '2025-12-01 00:00:00',
+		null
+	),
+	(
+		902,
+		1,
+		101,
+		301,
+		'스포팅컷',
+		'/api/v1/beauty/style-simulations/images/source-active.png',
+		null,
+		'/api/v1/beauty/style-simulations/images/generated-active.png',
+		'LOCAL',
+		'COMPLETED',
+		null,
+		timestamp '2099-01-01 00:00:00',
+		timestamp '2026-01-01 00:00:00',
+		null
+	);
