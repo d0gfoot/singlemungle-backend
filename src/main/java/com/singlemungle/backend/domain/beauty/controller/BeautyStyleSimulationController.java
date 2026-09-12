@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -112,7 +113,28 @@ public class BeautyStyleSimulationController {
 	)
 	public ResponseEntity<Resource> getImage(@PathVariable String fileName) {
 		return ResponseEntity.ok()
-			.contentType(MediaType.APPLICATION_OCTET_STREAM)
+			.contentType(imageMediaType(fileName))
+			.header(
+				"Content-Disposition",
+				ContentDisposition.inline()
+					.filename(fileName)
+					.build()
+					.toString()
+			)
 			.body(simulationService.loadImage(fileName));
+	}
+
+	private MediaType imageMediaType(String fileName) {
+		String lowerCaseFileName = fileName.toLowerCase();
+		if (lowerCaseFileName.endsWith(".jpg") || lowerCaseFileName.endsWith(".jpeg")) {
+			return MediaType.IMAGE_JPEG;
+		}
+		if (lowerCaseFileName.endsWith(".png")) {
+			return MediaType.IMAGE_PNG;
+		}
+		if (lowerCaseFileName.endsWith(".webp")) {
+			return MediaType.parseMediaType("image/webp");
+		}
+		return MediaType.APPLICATION_OCTET_STREAM;
 	}
 }
