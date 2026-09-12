@@ -7,6 +7,7 @@ import java.util.List;
 import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 import com.singlemungle.backend.common.response.PageResponse;
+import com.singlemungle.backend.domain.beauty.ai.BeautyStylePromptBuilder;
 import com.singlemungle.backend.domain.beauty.ai.GeneratedImage;
 import com.singlemungle.backend.domain.beauty.ai.ImageGenerationClient;
 import com.singlemungle.backend.domain.beauty.ai.ImageGenerationRequest;
@@ -39,6 +40,7 @@ public class BeautyStyleSimulationService {
 	private final PetRepository petRepository;
 	private final PlaceRepository placeRepository;
 	private final ImageGenerationClient imageGenerationClient;
+	private final BeautyStylePromptBuilder promptBuilder;
 	private final ImageStorage imageStorage;
 
 	@Transactional
@@ -75,7 +77,7 @@ public class BeautyStyleSimulationService {
 
 		try {
 			GeneratedImage generatedImage = imageGenerationClient.generate(new ImageGenerationRequest(
-				prompt(styleKeyword),
+				promptBuilder.build(styleKeyword),
 				petImageData.bytes(),
 				petImageData.mimeType(),
 				styleImageData == null ? null : styleImageData.bytes(),
@@ -158,23 +160,6 @@ public class BeautyStyleSimulationService {
 		} catch (IOException exception) {
 			throw new BusinessException(ErrorCode.INVALID_REQUEST);
 		}
-	}
-
-	private String prompt(String styleKeyword) {
-		return """
-			Create a realistic edited dog grooming preview from the uploaded pet photo.
-
-			Required grooming style: "%s".
-
-			Important requirements:
-			- Do not return an unchanged copy of the source image.
-			- Keep the same dog identity, pose, face direction, fur color, and main facial features.
-			- Make the grooming result clearly visible and noticeably different from the original.
-			- Change the coat silhouette, face outline, ear shape/trim, muzzle area, and leg/body fur length to match the requested grooming style.
-			- If no reference style image is provided, infer a typical professional pet salon version of the requested style.
-			- Preserve a natural photo-realistic look. Avoid cartoon effects, accessories, text, logos, or background distortion.
-			- The final image should look like an after-grooming preview of the same dog, not a resized or lightly retouched source photo.
-			""".formatted(styleKeyword.trim());
 	}
 
 	private record ImageData(
