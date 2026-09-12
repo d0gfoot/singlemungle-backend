@@ -21,6 +21,9 @@ public record BeautyStyleSimulationResponse(
 	@Schema(description = "미용 스타일 키워드", example = "곰돌이컷")
 	String styleKeyword,
 
+	@Schema(description = "스타일 생성 추가 요청", example = "좀 더 샤프하고 날렵하게")
+	String additionalRequest,
+
 	@Schema(description = "원본 반려견 이미지 URL")
 	String sourceImageUrl,
 
@@ -43,11 +46,12 @@ public record BeautyStyleSimulationResponse(
 	public static BeautyStyleSimulationResponse from(BeautyStyleSimulation simulation) {
 		return new BeautyStyleSimulationResponse(
 			simulation.getId(),
-			simulation.getPetId(),
-			simulation.getShopId(),
-			simulation.getStyleKeyword(),
-			simulation.getSourceImageUrl(),
-			simulation.getStyleImageUrl(),
+				simulation.getPetId(),
+				simulation.getShopId(),
+				simulation.getStyleKeyword(),
+				simulation.getAdditionalRequest(),
+				simulation.getSourceImageUrl(),
+				simulation.getStyleImageUrl(),
 			simulation.getGeneratedImageUrl(),
 			simulation.getStatus(),
 			simulation.getExpiresAt(),

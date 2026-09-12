@@ -39,6 +39,9 @@ public class BeautyStyleSimulation {
 	@Column(name = "style_keyword", nullable = false, length = 100)
 	private String styleKeyword;
 
+	@Column(name = "additional_request", length = 500)
+	private String additionalRequest;
+
 	@Column(name = "source_image_url", nullable = false, columnDefinition = "text")
 	private String sourceImageUrl;
 
@@ -75,6 +78,7 @@ public class BeautyStyleSimulation {
 		Long petId,
 		Long shopId,
 		String styleKeyword,
+		String additionalRequest,
 		String sourceImageUrl,
 		String styleImageUrl,
 		String storageProvider
@@ -83,6 +87,7 @@ public class BeautyStyleSimulation {
 		this.petId = petId;
 		this.shopId = shopId;
 		this.styleKeyword = styleKeyword;
+		this.additionalRequest = additionalRequest;
 		this.sourceImageUrl = sourceImageUrl;
 		this.styleImageUrl = styleImageUrl;
 		this.storageProvider = storageProvider;

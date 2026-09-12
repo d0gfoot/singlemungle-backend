@@ -35,6 +35,7 @@ public class BeautyStyleSimulationService {
 	private static final long MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 	private static final List<String> SUPPORTED_IMAGE_TYPES = List.of("image/jpeg", "image/png", "image/webp");
 	private static final String STORAGE_PROVIDER = "LOCAL";
+	private static final int MAX_ADDITIONAL_REQUEST_LENGTH = 500;
 
 	private final BeautyStyleSimulationRepository simulationRepository;
 	private final PetRepository petRepository;
@@ -49,15 +50,19 @@ public class BeautyStyleSimulationService {
 		Long petId,
 		Long shopId,
 		String styleKeyword,
+		String additionalRequest,
 		MultipartFile petImage,
 		MultipartFile styleImage
 	) {
 		validateStyleKeyword(styleKeyword);
+		validateAdditionalRequest(additionalRequest);
 		validateImage(petImage, true);
 		validateImage(styleImage, false);
 		validateOwnedPet(userId, petId);
 		validateBeautyShop(shopId);
 
+		String trimmedStyleKeyword = styleKeyword.trim();
+		String trimmedAdditionalRequest = trimToNull(additionalRequest);
 		ImageData petImageData = toImageData(petImage);
 		ImageData styleImageData = toImageData(styleImage);
 		String sourceImageUrl = imageStorage.store(petImageData.bytes(), petImageData.mimeType());
@@ -69,7 +74,8 @@ public class BeautyStyleSimulationService {
 			userId,
 			petId,
 			shopId,
-			styleKeyword.trim(),
+			trimmedStyleKeyword,
+			trimmedAdditionalRequest,
 			sourceImageUrl,
 			styleImageUrl,
 			STORAGE_PROVIDER
@@ -77,7 +83,7 @@ public class BeautyStyleSimulationService {
 
 		try {
 			GeneratedImage generatedImage = imageGenerationClient.generate(new ImageGenerationRequest(
-				promptBuilder.build(styleKeyword),
+				promptBuilder.build(trimmedStyleKeyword, trimmedAdditionalRequest),
 				petImageData.bytes(),
 				petImageData.mimeType(),
 				styleImageData == null ? null : styleImageData.bytes(),
@@ -137,6 +143,19 @@ public class BeautyStyleSimulationService {
 		if (styleKeyword == null || styleKeyword.isBlank() || styleKeyword.length() > 100) {
 			throw new BusinessException(ErrorCode.INVALID_REQUEST);
 		}
+	}
+
+	private void validateAdditionalRequest(String additionalRequest) {
+		if (additionalRequest != null && additionalRequest.length() > MAX_ADDITIONAL_REQUEST_LENGTH) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST);
+		}
+	}
+
+	private String trimToNull(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		return value.trim();
 	}
 
 	private void validateImage(MultipartFile image, boolean required) {

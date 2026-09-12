@@ -50,11 +50,13 @@ public class BeautyStyleSimulationController {
 		@RequestParam Long petId,
 		@Parameter(description = "미용샵 ID", example = "1")
 		@RequestParam Long shopId,
-		@Parameter(description = "미용 스타일 키워드", example = "곰돌이컷")
-		@RequestParam String styleKeyword,
-		@Parameter(
-			description = "사용자 반려견 이미지. jpg, png, webp만 허용합니다.",
-			content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+			@Parameter(description = "미용 스타일 키워드", example = "곰돌이컷")
+			@RequestParam String styleKeyword,
+			@Parameter(description = "스타일 생성 추가 요청. 선택값입니다.", example = "좀 더 샤프하고 날렵하게")
+			@RequestParam(required = false) String additionalRequest,
+			@Parameter(
+				description = "사용자 반려견 이미지. jpg, png, webp만 허용합니다.",
+				content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE)
 		)
 		@RequestPart MultipartFile petImage,
 		@Parameter(
@@ -65,12 +67,13 @@ public class BeautyStyleSimulationController {
 	) {
 		return ApiResponse.success(simulationService.createSimulation(
 			principal.userId(),
-			petId,
-			shopId,
-			styleKeyword,
-			petImage,
-			styleImage
-		));
+				petId,
+				shopId,
+				styleKeyword,
+				additionalRequest,
+				petImage,
+				styleImage
+			));
 	}
 
 	@GetMapping("/{simulationId}")

@@ -54,12 +54,14 @@ class BeautyControllerTest {
 				.param("petId", "101")
 				.param("shopId", "301")
 				.param("styleKeyword", "곰돌이컷")
+				.param("additionalRequest", "좀 더 샤프하고 날렵하게")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
 			.andExpect(jsonPath("$.data.petId").value(101))
 			.andExpect(jsonPath("$.data.shopId").value(301))
 			.andExpect(jsonPath("$.data.styleKeyword").value("곰돌이컷"))
+			.andExpect(jsonPath("$.data.additionalRequest").value("좀 더 샤프하고 날렵하게"))
 			.andExpect(jsonPath("$.data.status").value("COMPLETED"))
 			.andExpect(jsonPath("$.data.sourceImageUrl").isString())
 			.andExpect(jsonPath("$.data.generatedImageUrl").isString());
@@ -103,6 +105,19 @@ class BeautyControllerTest {
 				.param("petId", "101")
 				.param("shopId", "301")
 				.param("styleKeyword", "곰돌이컷")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+	}
+
+	@Test
+	void createStyleSimulationValidatesAdditionalRequestLength() throws Exception {
+		mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
+				.file(petImage())
+				.param("petId", "101")
+				.param("shopId", "301")
+				.param("styleKeyword", "곰돌이컷")
+				.param("additionalRequest", "a".repeat(501))
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
