@@ -83,7 +83,7 @@ public class BeautyStyleSimulationService {
 
 		try {
 			GeneratedImage generatedImage = imageGenerationClient.generate(new ImageGenerationRequest(
-				promptBuilder.build(trimmedStyleKeyword, trimmedAdditionalRequest),
+				promptBuilder.build(trimmedStyleKeyword, trimmedAdditionalRequest, styleImageData != null),
 				petImageData.bytes(),
 				petImageData.mimeType(),
 				styleImageData == null ? null : styleImageData.bytes(),
