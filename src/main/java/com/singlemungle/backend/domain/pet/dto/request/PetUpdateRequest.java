@@ -18,6 +18,8 @@ public record PetUpdateRequest(
 	LocalDate birthDate,
 	@Schema(description = "몸무게 kg", example = "4.8")
 	@Positive Double weight,
+    @Schema(description = "중성화 여부", example = "true")
+    Boolean neutered,
 	@Schema(description = "메모", example = "최근 체중 증가")
 	@Size(max = 1000) String memo
 ) {

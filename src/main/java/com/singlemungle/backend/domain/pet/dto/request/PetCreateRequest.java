@@ -19,6 +19,8 @@ public record PetCreateRequest(
 	LocalDate birthDate,
 	@Schema(description = "몸무게 kg", example = "4.5")
 	@Positive Double weight,
+    @Schema(description = "중성화 여부", example = "true")
+    Boolean neutered,
 	@Schema(description = "메모", example = "활발하고 산책을 좋아함")
 	@Size(max = 1000) String memo
 ) {

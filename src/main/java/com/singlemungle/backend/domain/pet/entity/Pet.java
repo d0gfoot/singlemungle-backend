@@ -56,4 +56,8 @@ public class Pet {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    //중성화
+    @Column(name = "neutered")
+    private Boolean neutered;
 }
