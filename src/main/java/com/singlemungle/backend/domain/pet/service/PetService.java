@@ -27,8 +27,16 @@ public class PetService {
     public List<PetResponse> getMyPets(Long userId) {
         return petRepo.findByUserId(userId).stream()
                 .map(p -> new PetResponse(
-                        p.getId(), p.getName(), p.getBreed(),
-                        calculateAge(p.getBirthDate()), p.getIsRepresentative()
+                        p.getId(),
+                        p.getName(),
+                        p.getBreed(),
+                        p.getGender(),
+                        p.getBirthDate(),
+                        p.getWeight(),
+                        p.getMemo(),
+                        p.getNeutered(),
+                        calculateAge(p.getBirthDate()),
+                        p.getIsRepresentative()
                 ))
                 .toList();
     }
@@ -43,6 +51,7 @@ public class PetService {
         p.setBirthDate(req.birthDate());
         p.setWeight(req.weight());
         p.setMemo(req.memo());
+        p.setNeutered(req.neutered());
 
         p.setIsRepresentative(petRepo.findByUserId(userId).isEmpty());
 
@@ -52,12 +61,15 @@ public class PetService {
     @Transactional
     public void updatePet(Long userId, Long petId, PetUpdateRequest req) {
         Pet p = findOwnedPet(userId, petId);
-        if(req.name() != null) p.setName(req.name());
-        if(req.gender() != null) p.setGender(req.gender());
-        if(req.breed() != null) p.setBreed(req.breed());
-        if(req.birthDate() != null) p.setBirthDate(req.birthDate());
-        if(req.weight() != null) p.setWeight(req.weight());
-        if(req.memo() != null) p.setMemo(req.memo());
+
+        if (req.name() != null) p.setName(req.name());
+        if (req.gender() != null) p.setGender(req.gender());
+        if (req.breed() != null) p.setBreed(req.breed());
+        if (req.birthDate() != null) p.setBirthDate(req.birthDate());
+        if (req.weight() != null) p.setWeight(req.weight());
+        if (req.memo() != null) p.setMemo(req.memo());
+        if (req.neutered() != null) p.setNeutered(req.neutered());
+
         p.setUpdatedAt(LocalDateTime.now());
     }
 
@@ -71,6 +83,7 @@ public class PetService {
     @Transactional
     public void setRepresentative(Long userId, Long petId) {
         findOwnedPet(userId, petId);
+
         petRepo.findByUserId(userId).forEach(p -> {
             p.setIsRepresentative(p.getId().equals(petId));
         });

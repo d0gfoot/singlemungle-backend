@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +18,9 @@ import com.singlemungle.backend.domain.walk.dto.response.WalkListResponse;
 import com.singlemungle.backend.domain.walk.dto.response.WalkResponse;
 import com.singlemungle.backend.domain.walk.entity.Walk;
 import com.singlemungle.backend.domain.walk.repository.WalkRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,8 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class WalkService {
-
-    private static final double CALORIE_FACTOR = 1.1;
 
     private final WalkRepository walkRepository;
     private final PetRepository petRepository;
@@ -99,8 +100,25 @@ public class WalkService {
     /**
      * 산책 기록 등록
      *
-     * 칼로리
-     * = 체중(kg) × 거리(km) × 1.1
+     * 칼로리 계산
+     *
+     * 1. 반려동물 체중으로 체급 분류
+     *    - 10kg 미만       : 소형
+     *    - 10kg ~ 25kg 미만: 중형
+     *    - 25kg 이상       : 대형
+     *
+     * 2. RER
+     *    = 70 × 체중(kg)^0.75
+     *
+     * 3. MER
+     *    - 중성화     : RER × 1.6
+     *    - 미중성화   : RER × 1.8
+     *
+     * 4. 산책 칼로리 추정
+     *    = MER × (산책시간 / 하루 1440분)
+     *
+     * ※ 체급은 반려동물 분류용으로 사용하며,
+     *    수의학 공식에 없는 별도 체급 계수는 적용하지 않는다.
      */
     @Transactional
     public Long addWalk(
@@ -111,17 +129,35 @@ public class WalkService {
         Pet pet = getOwnedPet(userId, petId);
 
         // 반려동물 체중 확인
-        if (pet.getWeight() == null) {
+        if (pet.getWeight() == null || pet.getWeight() <= 0) {
             throw new BusinessException(
                     ErrorCode.INVALID_REQUEST
             );
         }
 
-        // 칼로리 계산
+        // 산책 시간 확인
+        if (request.durationMinutes() == null
+                || request.durationMinutes() <= 0) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_REQUEST
+            );
+        }
+
+        // 반려동물 체급 확인
+        DogSize dogSize = getDogSize(pet.getWeight());
+
+        /*
+         * 현재는 체급에 따라 임의의 칼로리 계수를 추가하지 않는다.
+         * RER 공식 자체가 체중을 기반으로 계산하기 때문이다.
+         *
+         * dogSize는 향후 화면 표시,
+         * 체급별 추천 등의 기능에 활용할 수 있다.
+         */
         double calories =
-                pet.getWeight()
-                        * request.distanceKm()
-                        * CALORIE_FACTOR;
+                calculateWalkCalories(
+                        pet,
+                        request.durationMinutes()
+                );
 
         Walk walk = new Walk();
 
@@ -147,7 +183,7 @@ public class WalkService {
 
         // 칼로리
         walk.setCalories(
-                (int) calories
+                (int) Math.round(calories)
         );
 
         // GPS 경로
@@ -188,8 +224,6 @@ public class WalkService {
                         .atStartOfDay();
 
         // 다음 달 시작
-        // 현재 달의 마지막 날짜를 직접 계산하는 것보다
-        // 다음 달 1일 미만으로 조회하는 것이 안전함
         LocalDateTime endDate =
                 startDate.plusMonths(1);
 
@@ -260,6 +294,100 @@ public class WalkService {
                         ErrorCode.PET_NOT_FOUND
                 )
         );
+    }
+
+
+    /**
+     * 반려동물 체급 분류
+     *
+     * 프로젝트 기준
+     * - 10kg 미만       : 소형
+     * - 10kg ~ 25kg 미만: 중형
+     * - 25kg 이상       : 대형
+     */
+    private DogSize getDogSize(Double weight) {
+
+        if (weight < 10) {
+            return DogSize.SMALL;
+        }
+
+        if (weight < 25) {
+            return DogSize.MEDIUM;
+        }
+
+        return DogSize.LARGE;
+    }
+
+
+    /**
+     * RER 계산
+     *
+     * RER = 70 × 체중(kg)^0.75
+     */
+    private double calculateRER(Double weight) {
+
+        return 70.0 * Math.pow(weight, 0.75);
+    }
+
+
+    /**
+     * MER 계산
+     *
+     * 건강한 성견 기준
+     *
+     * 중성화     : RER × 1.6
+     * 미중성화   : RER × 1.8
+     */
+    private double calculateMER(Pet pet) {
+
+        double rer =
+                calculateRER(
+                        pet.getWeight()
+                );
+
+        if (Boolean.TRUE.equals(
+                pet.getNeutered()
+        )) {
+            return rer * 1.6;
+        }
+
+        return rer * 1.8;
+    }
+
+
+    /**
+     * 산책 칼로리 추정
+     *
+     * 하루 1440분을 기준으로
+     * 산책 시간에 해당하는 MER 비율을 계산한다.
+     *
+     * ※ 이 값은 프로젝트용 추정값이다.
+     *    RER/MER 공식 자체는 일일 에너지 요구량 계산용이다.
+     */
+    private double calculateWalkCalories(
+            Pet pet,
+            Integer durationMinutes
+    ) {
+        double mer =
+                calculateMER(pet);
+
+        double dayMinutes =
+                24.0 * 60.0;
+
+        double timeRatio =
+                durationMinutes / dayMinutes;
+
+        return mer * timeRatio;
+    }
+
+
+    /**
+     * 체급 Enum
+     */
+    private enum DogSize {
+        SMALL,
+        MEDIUM,
+        LARGE
     }
 
 
