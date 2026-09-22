@@ -10,7 +10,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,69 @@ import org.springframework.web.multipart.MultipartFile;
 @SecurityRequirement(name = "bearerAuth")
 public class BeautyStyleSimulationController {
 
+	private static final String PENDING_RESPONSE_EXAMPLE = """
+		{
+		  "code": "SUCCESS",
+		  "message": "요청 성공",
+		  "data": {
+		    "simulationId": 42,
+		    "petId": 7,
+		    "shopId": 3,
+		    "styleKeyword": "곰돌이컷",
+		    "additionalRequest": "좀 더 샤프하고 날렵하게",
+		    "sourceImageUrl": "/api/v1/beauty/style-simulations/images/source.jpg",
+		    "styleImageUrl": null,
+		    "generatedImageUrl": null,
+		    "status": "PENDING",
+		    "failureReason": null,
+		    "expiresAt": "2026-10-22T18:00:00",
+		    "createdAt": "2026-09-22T18:00:00"
+		  }
+		}
+		""";
+
+	private static final String COMPLETED_RESPONSE_EXAMPLE = """
+		{
+		  "code": "SUCCESS",
+		  "message": "요청 성공",
+		  "data": {
+		    "simulationId": 42,
+		    "petId": 7,
+		    "shopId": 3,
+		    "styleKeyword": "곰돌이컷",
+		    "additionalRequest": "좀 더 샤프하고 날렵하게",
+		    "sourceImageUrl": "/api/v1/beauty/style-simulations/images/source.jpg",
+		    "styleImageUrl": null,
+		    "generatedImageUrl": "/api/v1/beauty/style-simulations/images/generated.jpg",
+		    "status": "COMPLETED",
+		    "failureReason": null,
+		    "expiresAt": "2026-10-22T18:00:00",
+		    "createdAt": "2026-09-22T18:00:00"
+		  }
+		}
+		""";
+
+	private static final String FAILED_RESPONSE_EXAMPLE = """
+		{
+		  "code": "SUCCESS",
+		  "message": "요청 성공",
+		  "data": {
+		    "simulationId": 42,
+		    "petId": 7,
+		    "shopId": 3,
+		    "styleKeyword": "곰돌이컷",
+		    "additionalRequest": "좀 더 샤프하고 날렵하게",
+		    "sourceImageUrl": null,
+		    "styleImageUrl": null,
+		    "generatedImageUrl": null,
+		    "status": "FAILED",
+		    "failureReason": "IMAGE_GENERATION_FAILED",
+		    "expiresAt": "2026-10-22T18:00:00",
+		    "createdAt": "2026-09-22T18:00:00"
+		  }
+		}
+		""";
+
 	private final BeautyStyleSimulationService simulationService;
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -48,6 +113,16 @@ public class BeautyStyleSimulationController {
 		summary = "AI 스타일 시뮬레이션 생성",
 		description = "생성 요청을 접수하고 PENDING 상태를 반환합니다. 완료 여부는 상세 조회 API에서 확인합니다."
 	)
+	@ApiResponses({
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(
+			responseCode = "202",
+			description = "생성 요청 접수",
+			content = @Content(
+				mediaType = MediaType.APPLICATION_JSON_VALUE,
+				examples = @ExampleObject(name = "PENDING", value = PENDING_RESPONSE_EXAMPLE)
+			)
+		)
+	})
 	public ApiResponse<BeautyStyleSimulationResponse> createSimulation(
 		@AuthenticationPrincipal CustomUserPrincipal principal,
 		@Parameter(description = "반려동물 ID", example = "101")
@@ -82,6 +157,20 @@ public class BeautyStyleSimulationController {
 
 	@GetMapping("/{simulationId}")
 	@Operation(summary = "AI 스타일 시뮬레이션 상세 조회", description = "내가 생성한 스타일 시뮬레이션 결과를 조회합니다.")
+	@ApiResponses({
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(
+			responseCode = "200",
+			description = "생성 상태 조회 성공",
+			content = @Content(
+				mediaType = MediaType.APPLICATION_JSON_VALUE,
+				examples = {
+					@ExampleObject(name = "PENDING", value = PENDING_RESPONSE_EXAMPLE),
+					@ExampleObject(name = "COMPLETED", value = COMPLETED_RESPONSE_EXAMPLE),
+					@ExampleObject(name = "FAILED", value = FAILED_RESPONSE_EXAMPLE)
+				}
+			)
+		)
+	})
 	public ApiResponse<BeautyStyleSimulationResponse> getSimulation(
 		@AuthenticationPrincipal CustomUserPrincipal principal,
 		@Parameter(description = "시뮬레이션 ID", example = "1") @PathVariable Long simulationId

@@ -30,7 +30,9 @@ public class BeautyStyleSimulationProcessor {
 		try {
 			GeneratedImage generatedImage = imageGenerationClient.generate(event.generationRequest());
 			generatedImageUrl = imageStorage.store(generatedImage.bytes(), generatedImage.mimeType());
-			statusService.complete(event.simulationId(), generatedImageUrl);
+			if (!statusService.complete(event.simulationId(), generatedImageUrl)) {
+				deleteQuietly(generatedImageUrl, event.simulationId());
+			}
 		} catch (RuntimeException exception) {
 			deleteQuietly(generatedImageUrl, event.simulationId());
 			deleteQuietly(event.sourceImageUrl(), event.simulationId());

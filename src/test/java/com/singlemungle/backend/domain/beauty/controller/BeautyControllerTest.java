@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 
 import com.singlemungle.backend.domain.auth.service.JwtTokenService;
@@ -181,6 +183,11 @@ class BeautyControllerTest {
 
 		Integer simulationId = JsonPath.read(result.getResponse().getContentAsString(), "$.data.simulationId");
 		awaitCompleted(simulationId.longValue());
+		BeautyStyleSimulation simulation = simulationRepository.findById(simulationId.longValue()).orElseThrow();
+		Path sourceImage = storedImagePath(simulation.getSourceImageUrl());
+		Path generatedImage = storedImagePath(simulation.getGeneratedImageUrl());
+		assertThat(sourceImage).exists();
+		assertThat(generatedImage).exists();
 
 		mockMvc.perform(delete("/api/v1/beauty/style-simulations/{simulationId}", simulationId)
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
@@ -191,6 +198,8 @@ class BeautyControllerTest {
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("STYLE_SIMULATION_NOT_FOUND"));
+		assertThat(sourceImage).doesNotExist();
+		assertThat(generatedImage).doesNotExist();
 	}
 
 	private MockMultipartFile petImage() {
@@ -210,6 +219,11 @@ class BeautyControllerTest {
 				assertThat(simulation.getStatus()).isEqualTo(BeautyStyleSimulationStatus.COMPLETED);
 				assertThat(simulation.getGeneratedImageUrl()).isNotBlank();
 			});
+	}
+
+	private Path storedImagePath(String imageUrl) {
+		String fileName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+		return Path.of("build/test-generated-images").resolve(fileName);
 	}
 
 	private String bearerToken() {

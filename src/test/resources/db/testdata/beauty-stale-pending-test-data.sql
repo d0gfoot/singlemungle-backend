@@ -1,0 +1,31 @@
+insert into beauty_style_simulations (
+	id,
+	user_id,
+	pet_id,
+	shop_id,
+	style_keyword,
+	source_image_url,
+	style_image_url,
+	generated_image_url,
+	storage_provider,
+	status,
+	failure_reason,
+	expires_at,
+	created_at,
+	deleted_at
+) values (
+	903,
+	1,
+	101,
+	301,
+	'곰돌이컷',
+	'/api/v1/beauty/style-simulations/images/source-pending.png',
+	'/api/v1/beauty/style-simulations/images/style-pending.png',
+	null,
+	'LOCAL',
+	'PENDING',
+	null,
+	timestamp '2099-01-01 00:00:00',
+	timestamp '2025-01-01 00:00:00',
+	null
+);

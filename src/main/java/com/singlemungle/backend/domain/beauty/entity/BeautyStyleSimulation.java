@@ -102,18 +102,26 @@ public class BeautyStyleSimulation {
 		}
 	}
 
-	public void complete(String generatedImageUrl) {
+	public boolean complete(String generatedImageUrl) {
+		if (status != BeautyStyleSimulationStatus.PENDING) {
+			return false;
+		}
 		this.generatedImageUrl = generatedImageUrl;
 		this.status = BeautyStyleSimulationStatus.COMPLETED;
 		this.failureReason = null;
+		return true;
 	}
 
-	public void fail(String failureReason) {
+	public boolean fail(String failureReason) {
+		if (status != BeautyStyleSimulationStatus.PENDING) {
+			return false;
+		}
 		this.status = BeautyStyleSimulationStatus.FAILED;
 		this.failureReason = failureReason;
 		this.sourceImageUrl = null;
 		this.styleImageUrl = null;
 		this.generatedImageUrl = null;
+		return true;
 	}
 
 	public void delete() {

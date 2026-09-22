@@ -125,6 +125,9 @@ public class BeautyStyleSimulationService {
 	@Transactional
 	public void deleteSimulation(Long userId, Long simulationId) {
 		BeautyStyleSimulation simulation = findOwnedSimulation(userId, simulationId);
+		imageStorage.delete(simulation.getSourceImageUrl());
+		imageStorage.delete(simulation.getStyleImageUrl());
+		imageStorage.delete(simulation.getGeneratedImageUrl());
 		simulation.delete();
 	}
 

@@ -1,6 +1,7 @@
 package com.singlemungle.backend.domain.beauty.ai;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -15,6 +16,7 @@ import com.singlemungle.backend.common.exception.ErrorCode;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -33,7 +35,13 @@ public class VertexAiImageGenerationClient implements ImageGenerationClient {
 		this.properties = properties;
 		this.credentials = GoogleCredentials.getApplicationDefault()
 			.createScoped(List.of(CLOUD_PLATFORM_SCOPE));
-		this.restClient = RestClient.create();
+		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+		Duration timeout = Duration.ofSeconds(properties.getTimeoutSeconds());
+		requestFactory.setConnectTimeout(timeout);
+		requestFactory.setReadTimeout(timeout);
+		this.restClient = RestClient.builder()
+			.requestFactory(requestFactory)
+			.build();
 	}
 
 	@Override

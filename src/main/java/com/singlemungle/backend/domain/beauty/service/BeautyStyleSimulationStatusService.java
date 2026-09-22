@@ -18,13 +18,13 @@ public class BeautyStyleSimulationStatusService {
 	private final BeautyStyleSimulationRepository simulationRepository;
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void complete(Long simulationId, String generatedImageUrl) {
-		findSimulation(simulationId).complete(generatedImageUrl);
+	public boolean complete(Long simulationId, String generatedImageUrl) {
+		return findSimulation(simulationId).complete(generatedImageUrl);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void fail(Long simulationId, String failureReason) {
-		findSimulation(simulationId).fail(failureReason);
+	public boolean fail(Long simulationId, String failureReason) {
+		return findSimulation(simulationId).fail(failureReason);
 	}
 
 	private BeautyStyleSimulation findSimulation(Long simulationId) {

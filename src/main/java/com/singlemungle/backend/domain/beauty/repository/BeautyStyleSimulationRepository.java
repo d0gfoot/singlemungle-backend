@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulation;
+import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulationStatus;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,4 +22,9 @@ public interface BeautyStyleSimulationRepository extends JpaRepository<BeautySty
 	);
 
 	List<BeautyStyleSimulation> findByExpiresAtBefore(LocalDateTime now);
+
+	List<BeautyStyleSimulation> findByStatusAndCreatedAtBefore(
+		BeautyStyleSimulationStatus status,
+		LocalDateTime createdBefore
+	);
 }
