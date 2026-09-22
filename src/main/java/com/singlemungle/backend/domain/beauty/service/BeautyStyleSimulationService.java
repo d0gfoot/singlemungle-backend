@@ -8,8 +8,6 @@ import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 import com.singlemungle.backend.common.response.PageResponse;
 import com.singlemungle.backend.domain.beauty.ai.BeautyStylePromptBuilder;
-import com.singlemungle.backend.domain.beauty.ai.GeneratedImage;
-import com.singlemungle.backend.domain.beauty.ai.ImageGenerationClient;
 import com.singlemungle.backend.domain.beauty.ai.ImageGenerationRequest;
 import com.singlemungle.backend.domain.beauty.dto.response.BeautyStyleSimulationResponse;
 import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulation;
@@ -22,10 +20,13 @@ import com.singlemungle.backend.domain.place.repository.PlaceRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.core.io.Resource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -40,9 +41,9 @@ public class BeautyStyleSimulationService {
 	private final BeautyStyleSimulationRepository simulationRepository;
 	private final PetRepository petRepository;
 	private final PlaceRepository placeRepository;
-	private final ImageGenerationClient imageGenerationClient;
 	private final BeautyStylePromptBuilder promptBuilder;
 	private final ImageStorage imageStorage;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
 	public BeautyStyleSimulationResponse createSimulation(
@@ -65,38 +66,46 @@ public class BeautyStyleSimulationService {
 		String trimmedAdditionalRequest = trimToNull(additionalRequest);
 		ImageData petImageData = toImageData(petImage);
 		ImageData styleImageData = toImageData(styleImage);
-		String sourceImageUrl = imageStorage.store(petImageData.bytes(), petImageData.mimeType());
-		String styleImageUrl = styleImageData == null
-			? null
-			: imageStorage.store(styleImageData.bytes(), styleImageData.mimeType());
-
-		BeautyStyleSimulation simulation = simulationRepository.save(new BeautyStyleSimulation(
-			userId,
-			petId,
-			shopId,
-			trimmedStyleKeyword,
-			trimmedAdditionalRequest,
-			sourceImageUrl,
-			styleImageUrl,
-			STORAGE_PROVIDER
-		));
-
+		String sourceImageUrl = null;
+		String styleImageUrl = null;
 		try {
-			GeneratedImage generatedImage = imageGenerationClient.generate(new ImageGenerationRequest(
+			sourceImageUrl = imageStorage.store(petImageData.bytes(), petImageData.mimeType());
+			styleImageUrl = styleImageData == null
+				? null
+				: imageStorage.store(styleImageData.bytes(), styleImageData.mimeType());
+			registerRollbackCleanup(sourceImageUrl, styleImageUrl);
+
+			BeautyStyleSimulation simulation = simulationRepository.save(new BeautyStyleSimulation(
+				userId,
+				petId,
+				shopId,
+				trimmedStyleKeyword,
+				trimmedAdditionalRequest,
+				sourceImageUrl,
+				styleImageUrl,
+				STORAGE_PROVIDER
+			));
+
+			ImageGenerationRequest generationRequest = new ImageGenerationRequest(
 				promptBuilder.build(trimmedStyleKeyword, trimmedAdditionalRequest, styleImageData != null),
 				petImageData.bytes(),
 				petImageData.mimeType(),
 				styleImageData == null ? null : styleImageData.bytes(),
 				styleImageData == null ? null : styleImageData.mimeType()
+			);
+			eventPublisher.publishEvent(new BeautyStyleSimulationRequestedEvent(
+				simulation.getId(),
+				sourceImageUrl,
+				styleImageUrl,
+				generationRequest
 			));
-			String generatedImageUrl = imageStorage.store(generatedImage.bytes(), generatedImage.mimeType());
-			simulation.complete(generatedImageUrl);
-		} catch (BusinessException exception) {
-			simulation.fail(exception.getErrorCode().getCode());
+
+			return BeautyStyleSimulationResponse.from(simulation);
+		} catch (RuntimeException exception) {
+			deleteQuietly(sourceImageUrl);
+			deleteQuietly(styleImageUrl);
 			throw exception;
 		}
-
-		return BeautyStyleSimulationResponse.from(simulation);
 	}
 
 	@Transactional(readOnly = true)
@@ -156,6 +165,29 @@ public class BeautyStyleSimulationService {
 			return null;
 		}
 		return value.trim();
+	}
+
+	private void registerRollbackCleanup(String sourceImageUrl, String styleImageUrl) {
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			return;
+		}
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCompletion(int status) {
+				if (status != STATUS_COMMITTED) {
+					deleteQuietly(sourceImageUrl);
+					deleteQuietly(styleImageUrl);
+				}
+			}
+		});
+	}
+
+	private void deleteQuietly(String imageUrl) {
+		try {
+			imageStorage.delete(imageUrl);
+		} catch (RuntimeException ignored) {
+			// Preserve the original request failure; scheduled cleanup handles persisted records.
+		}
 	}
 
 	private void validateImage(MultipartFile image, boolean required) {

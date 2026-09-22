@@ -18,8 +18,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,9 +43,10 @@ public class BeautyStyleSimulationController {
 	private final BeautyStyleSimulationService simulationService;
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@ResponseStatus(HttpStatus.ACCEPTED)
 	@Operation(
 		summary = "AI 스타일 시뮬레이션 생성",
-		description = "반려견 이미지와 미용 스타일 키워드를 기반으로 AI 스타일 이미지를 생성합니다."
+		description = "생성 요청을 접수하고 PENDING 상태를 반환합니다. 완료 여부는 상세 조회 API에서 확인합니다."
 	)
 	public ApiResponse<BeautyStyleSimulationResponse> createSimulation(
 		@AuthenticationPrincipal CustomUserPrincipal principal,

@@ -42,7 +42,7 @@ public class BeautyStyleSimulation {
 	@Column(name = "additional_request", length = 500)
 	private String additionalRequest;
 
-	@Column(name = "source_image_url", nullable = false, columnDefinition = "text")
+	@Column(name = "source_image_url", columnDefinition = "text")
 	private String sourceImageUrl;
 
 	@Column(name = "style_image_url", columnDefinition = "text")
@@ -111,6 +111,9 @@ public class BeautyStyleSimulation {
 	public void fail(String failureReason) {
 		this.status = BeautyStyleSimulationStatus.FAILED;
 		this.failureReason = failureReason;
+		this.sourceImageUrl = null;
+		this.styleImageUrl = null;
+		this.generatedImageUrl = null;
 	}
 
 	public void delete() {

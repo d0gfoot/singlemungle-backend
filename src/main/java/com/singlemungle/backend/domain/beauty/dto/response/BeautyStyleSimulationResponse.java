@@ -33,8 +33,11 @@ public record BeautyStyleSimulationResponse(
 	@Schema(description = "생성된 스타일 이미지 URL")
 	String generatedImageUrl,
 
-	@Schema(description = "생성 상태", example = "COMPLETED")
+	@Schema(description = "생성 상태", example = "PENDING")
 	BeautyStyleSimulationStatus status,
+
+	@Schema(description = "생성 실패 코드", example = "IMAGE_GENERATION_FAILED")
+	String failureReason,
 
 	@Schema(description = "만료 시각", example = "2026-10-12T14:30:00")
 	LocalDateTime expiresAt,
@@ -54,6 +57,7 @@ public record BeautyStyleSimulationResponse(
 				simulation.getStyleImageUrl(),
 			simulation.getGeneratedImageUrl(),
 			simulation.getStatus(),
+			simulation.getFailureReason(),
 			simulation.getExpiresAt(),
 			simulation.getCreatedAt()
 		);

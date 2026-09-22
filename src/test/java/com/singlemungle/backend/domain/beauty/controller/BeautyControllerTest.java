@@ -1,12 +1,19 @@
 package com.singlemungle.backend.domain.beauty.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
+
 import com.singlemungle.backend.domain.auth.service.JwtTokenService;
+import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulation;
+import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulationStatus;
+import com.singlemungle.backend.domain.beauty.repository.BeautyStyleSimulationRepository;
 import com.singlemungle.backend.domain.user.entity.UserRole;
 
 import com.jayway.jsonpath.JsonPath;
@@ -36,6 +43,9 @@ class BeautyControllerTest {
 	@Autowired
 	private JwtTokenService jwtTokenService;
 
+	@Autowired
+	private BeautyStyleSimulationRepository simulationRepository;
+
 	@Test
 	void getBeautyStylesReturnsShopStyles() throws Exception {
 		mockMvc.perform(get("/api/v1/beauty-shops/{shopId}/styles", 301)
@@ -48,23 +58,27 @@ class BeautyControllerTest {
 	}
 
 	@Test
-	void createStyleSimulationReturnsGeneratedImageUrl() throws Exception {
-		mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
+	void createStyleSimulationReturnsPendingAndCompletesAsynchronously() throws Exception {
+		MvcResult result = mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
 				.param("petId", "101")
 				.param("shopId", "301")
 				.param("styleKeyword", "곰돌이컷")
 				.param("additionalRequest", "좀 더 샤프하고 날렵하게")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
-			.andExpect(status().isOk())
+			.andExpect(status().isAccepted())
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
 			.andExpect(jsonPath("$.data.petId").value(101))
 			.andExpect(jsonPath("$.data.shopId").value(301))
 			.andExpect(jsonPath("$.data.styleKeyword").value("곰돌이컷"))
 			.andExpect(jsonPath("$.data.additionalRequest").value("좀 더 샤프하고 날렵하게"))
-			.andExpect(jsonPath("$.data.status").value("COMPLETED"))
+			.andExpect(jsonPath("$.data.status").value("PENDING"))
 			.andExpect(jsonPath("$.data.sourceImageUrl").isString())
-			.andExpect(jsonPath("$.data.generatedImageUrl").isString());
+			.andExpect(jsonPath("$.data.generatedImageUrl").doesNotExist())
+			.andReturn();
+
+		Integer simulationId = JsonPath.read(result.getResponse().getContentAsString(), "$.data.simulationId");
+		awaitCompleted(simulationId.longValue());
 	}
 
 	@Test
@@ -139,7 +153,12 @@ class BeautyControllerTest {
 				.param("shopId", "301")
 				.param("styleKeyword", "곰돌이컷")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
-			.andExpect(status().isOk());
+			.andExpect(status().isAccepted())
+			.andExpect(jsonPath("$.data.status").value("PENDING"))
+			.andDo(result -> {
+				Integer simulationId = JsonPath.read(result.getResponse().getContentAsString(), "$.data.simulationId");
+				awaitCompleted(simulationId.longValue());
+			});
 
 		mockMvc.perform(get("/api/v1/beauty/style-simulations")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
@@ -157,10 +176,11 @@ class BeautyControllerTest {
 				.param("shopId", "301")
 				.param("styleKeyword", "곰돌이컷")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
-			.andExpect(status().isOk())
+			.andExpect(status().isAccepted())
 			.andReturn();
 
 		Integer simulationId = JsonPath.read(result.getResponse().getContentAsString(), "$.data.simulationId");
+		awaitCompleted(simulationId.longValue());
 
 		mockMvc.perform(delete("/api/v1/beauty/style-simulations/{simulationId}", simulationId)
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
@@ -180,6 +200,16 @@ class BeautyControllerTest {
 			"image/png",
 			new byte[] {1, 2, 3}
 		);
+	}
+
+	private void awaitCompleted(Long simulationId) {
+		await()
+			.atMost(Duration.ofSeconds(5))
+			.untilAsserted(() -> {
+				BeautyStyleSimulation simulation = simulationRepository.findById(simulationId).orElseThrow();
+				assertThat(simulation.getStatus()).isEqualTo(BeautyStyleSimulationStatus.COMPLETED);
+				assertThat(simulation.getGeneratedImageUrl()).isNotBlank();
+			});
 	}
 
 	private String bearerToken() {
