@@ -2,6 +2,8 @@
 
 React Native 앱에서 자체 리뷰 이미지, 공통 스타일 프리셋, 사용자 업로드 이미지를 이용해 AI 미용 결과를 생성하는 API 명세입니다.
 
+배포와 발표 준비 작업은 [ai-style-simulation-release-checklist.md](ai-style-simulation-release-checklist.md)를 참고합니다.
+
 ## 공통
 
 - 인증: `Authorization: Bearer {accessToken}`
