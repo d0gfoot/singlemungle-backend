@@ -56,8 +56,8 @@ src/main/resources/application-secret.yml
 src/main/resources/application-secret.yaml
 src/main/resources/application-secret.properties
 
-### Local data import scripts ###
-scripts/import_kakao_places.py
+### Local scripts ###
+scripts/
 
 ### Local planning docs ###
 docs/ai-style-simulation.md
