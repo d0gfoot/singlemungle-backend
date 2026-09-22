@@ -48,6 +48,16 @@ public class LocalImageStorage implements ImageStorage {
 	}
 
 	@Override
+	public StoredImage read(String imageUrl) {
+		Path path = resolveImageUrl(imageUrl);
+		try {
+			return new StoredImage(Files.readAllBytes(path), mimeType(path.getFileName().toString()));
+		} catch (IOException exception) {
+			throw new BusinessException(ErrorCode.STYLE_SIMULATION_NOT_FOUND);
+		}
+	}
+
+	@Override
 	public Resource load(String fileName) {
 		Path path = directory.resolve(fileName).normalize();
 		if (!path.startsWith(directory.normalize()) || !Files.exists(path)) {
@@ -77,5 +87,31 @@ public class LocalImageStorage implements ImageStorage {
 
 	private String extension(String mimeType) {
 		return EXTENSIONS.getOrDefault(mimeType, ".bin");
+	}
+
+	private Path resolveImageUrl(String imageUrl) {
+		if (imageUrl == null || !imageUrl.startsWith(baseUrl + "/")) {
+			throw new BusinessException(ErrorCode.STYLE_SIMULATION_NOT_FOUND);
+		}
+		String fileName = imageUrl.substring((baseUrl + "/").length());
+		Path path = directory.resolve(fileName).normalize();
+		if (!path.startsWith(directory.normalize()) || !Files.exists(path)) {
+			throw new BusinessException(ErrorCode.STYLE_SIMULATION_NOT_FOUND);
+		}
+		return path;
+	}
+
+	private String mimeType(String fileName) {
+		String lowerCaseFileName = fileName.toLowerCase();
+		if (lowerCaseFileName.endsWith(".jpg") || lowerCaseFileName.endsWith(".jpeg")) {
+			return "image/jpeg";
+		}
+		if (lowerCaseFileName.endsWith(".png")) {
+			return "image/png";
+		}
+		if (lowerCaseFileName.endsWith(".webp")) {
+			return "image/webp";
+		}
+		return "application/octet-stream";
 	}
 }

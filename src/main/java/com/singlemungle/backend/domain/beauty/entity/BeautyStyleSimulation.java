@@ -33,11 +33,21 @@ public class BeautyStyleSimulation {
 	@Column(name = "pet_id", nullable = false)
 	private Long petId;
 
-	@Column(name = "shop_id", nullable = false)
+	@Column(name = "shop_id")
 	private Long shopId;
 
-	@Column(name = "style_keyword", nullable = false, length = 100)
+	@Column(name = "style_keyword", length = 100)
 	private String styleKeyword;
+
+	@Column(name = "style_preset_id")
+	private Long stylePresetId;
+
+	@Column(name = "reference_review_image_id")
+	private Long referenceReviewImageId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "source_type", length = 30)
+	private StyleSimulationSourceType sourceType;
 
 	@Column(name = "additional_request", length = 500)
 	private String additionalRequest;
@@ -78,6 +88,9 @@ public class BeautyStyleSimulation {
 		Long petId,
 		Long shopId,
 		String styleKeyword,
+		Long stylePresetId,
+		Long referenceReviewImageId,
+		StyleSimulationSourceType sourceType,
 		String additionalRequest,
 		String sourceImageUrl,
 		String styleImageUrl,
@@ -87,6 +100,9 @@ public class BeautyStyleSimulation {
 		this.petId = petId;
 		this.shopId = shopId;
 		this.styleKeyword = styleKeyword;
+		this.stylePresetId = stylePresetId;
+		this.referenceReviewImageId = referenceReviewImageId;
+		this.sourceType = sourceType;
 		this.additionalRequest = additionalRequest;
 		this.sourceImageUrl = sourceImageUrl;
 		this.styleImageUrl = styleImageUrl;

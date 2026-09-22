@@ -1,4 +1,6 @@
 delete from beauty_style_simulations;
+delete from review_images;
+delete from reviews;
 delete from beauty_styles;
 delete from walk_records;
 delete from place_images;

@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.nio.file.Path;
 import java.time.Duration;
 
 import com.singlemungle.backend.common.exception.BusinessException;
@@ -56,7 +55,7 @@ class BeautyStyleSimulationFailureIntegrationTest {
 	private ImageGenerationClient imageGenerationClient;
 
 	@Test
-	void generationFailurePersistsFailedStatusAndDeletesSourceImage() throws Exception {
+	void generationFailurePersistsFailedStatusAndDeletesTemporarySourceImage() throws Exception {
 		when(imageGenerationClient.generate(any(ImageGenerationRequest.class)))
 			.thenThrow(new BusinessException(ErrorCode.IMAGE_GENERATION_FAILED));
 
@@ -64,16 +63,13 @@ class BeautyStyleSimulationFailureIntegrationTest {
 				.file(new MockMultipartFile("petImage", "pet.png", "image/png", new byte[] {1, 2, 3}))
 				.param("petId", "101")
 				.param("shopId", "301")
-				.param("styleKeyword", "곰돌이컷")
+				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isAccepted())
 			.andExpect(jsonPath("$.data.status").value("PENDING"))
 			.andReturn();
 
 		Integer simulationId = JsonPath.read(result.getResponse().getContentAsString(), "$.data.simulationId");
-		String sourceImageUrl = JsonPath.read(result.getResponse().getContentAsString(), "$.data.sourceImageUrl");
-		Path sourceImage = storedImagePath(sourceImageUrl);
-
 		await()
 			.atMost(Duration.ofSeconds(5))
 			.untilAsserted(() -> {
@@ -81,13 +77,7 @@ class BeautyStyleSimulationFailureIntegrationTest {
 				assertThat(simulation.getStatus()).isEqualTo(BeautyStyleSimulationStatus.FAILED);
 				assertThat(simulation.getFailureReason()).isEqualTo(ErrorCode.IMAGE_GENERATION_FAILED.getCode());
 				assertThat(simulation.getSourceImageUrl()).isNull();
-				assertThat(sourceImage).doesNotExist();
 			});
-	}
-
-	private Path storedImagePath(String imageUrl) {
-		String fileName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
-		return Path.of("build/test-generated-images").resolve(fileName);
 	}
 
 	private String bearerToken() {

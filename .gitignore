@@ -61,3 +61,7 @@ scripts/import_kakao_places.py
 
 ### Local planning docs ###
 docs/ai-style-simulation.md
+
+### Demo image binaries ###
+demo/review-images/*
+!demo/review-images/README.md

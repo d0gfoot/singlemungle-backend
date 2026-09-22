@@ -13,19 +13,25 @@ import com.singlemungle.backend.common.config.VertexAiProperties;
 import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
+@Slf4j
 @Component
 @ConditionalOnProperty(name = "app.vertex-ai.enabled", havingValue = "true")
 public class VertexAiImageGenerationClient implements ImageGenerationClient {
 
 	private static final String CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 	private static final String DEFAULT_PROMPT = "Generate a realistic dog grooming style preview image.";
+	private static final int MAX_ERROR_BODY_LOG_LENGTH = 1000;
 
 	private final VertexAiProperties properties;
 	private final GoogleCredentials credentials;
@@ -56,9 +62,33 @@ public class VertexAiImageGenerationClient implements ImageGenerationClient {
 				});
 
 			return extractGeneratedImage(response);
-		} catch (RuntimeException | IOException exception) {
+		} catch (RestClientResponseException exception) {
+			log.error(
+				"Vertex AI image generation HTTP error status={} responseBody={}",
+				exception.getStatusCode().value(),
+				truncate(exception.getResponseBodyAsString()),
+				exception
+			);
+			throw new BusinessException(ErrorCode.IMAGE_GENERATION_FAILED);
+		} catch (ResourceAccessException exception) {
+			log.error("Vertex AI image generation network or timeout error", exception);
+			throw new BusinessException(ErrorCode.IMAGE_GENERATION_FAILED);
+		} catch (IOException exception) {
+			log.error("Vertex AI authentication failed while obtaining an access token", exception);
+			throw new BusinessException(ErrorCode.IMAGE_GENERATION_FAILED);
+		} catch (RuntimeException exception) {
+			log.error("Vertex AI image generation failed unexpectedly", exception);
 			throw new BusinessException(ErrorCode.IMAGE_GENERATION_FAILED);
 		}
+	}
+
+	private String truncate(String value) {
+		if (value == null || value.isBlank()) {
+			return "<empty>";
+		}
+		return value.length() <= MAX_ERROR_BODY_LOG_LENGTH
+			? value
+			: value.substring(0, MAX_ERROR_BODY_LOG_LENGTH) + "...[truncated]";
 	}
 
 	private String vertexGenerateContentUrl() {

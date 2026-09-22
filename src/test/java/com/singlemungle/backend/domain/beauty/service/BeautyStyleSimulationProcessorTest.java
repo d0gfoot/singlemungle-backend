@@ -4,12 +4,16 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.mockito.ArgumentMatchers.any;
+
 import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 import com.singlemungle.backend.domain.beauty.ai.ImageGenerationClient;
 import com.singlemungle.backend.domain.beauty.ai.ImageGenerationRequest;
 import com.singlemungle.backend.domain.beauty.ai.GeneratedImage;
 import com.singlemungle.backend.domain.beauty.storage.ImageStorage;
+import com.singlemungle.backend.domain.beauty.storage.TemporaryImage;
+import com.singlemungle.backend.domain.beauty.storage.TemporaryImageStorage;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +31,9 @@ class BeautyStyleSimulationProcessorTest {
 	private ImageStorage imageStorage;
 
 	@Mock
+	private TemporaryImageStorage temporaryImageStorage;
+
+	@Mock
 	private BeautyStyleSimulationStatusService statusService;
 
 	@InjectMocks
@@ -34,46 +41,38 @@ class BeautyStyleSimulationProcessorTest {
 
 	@Test
 	void processDeletesStoredInputsAndPersistsFailedStatusWhenGenerationFails() {
-		ImageGenerationRequest request = new ImageGenerationRequest(
-			"prompt",
-			new byte[] {1},
-			"image/png",
-			new byte[] {2},
-			"image/png"
-		);
+		TemporaryImage petImage = new TemporaryImage("pet.tmp", "image/png");
+		TemporaryImage styleImage = new TemporaryImage("style.tmp", "image/png");
 		BeautyStyleSimulationRequestedEvent event = new BeautyStyleSimulationRequestedEvent(
 			1L,
-			"/images/source.png",
-			"/images/style.png",
-			request
+			"prompt",
+			petImage,
+			styleImage
 		);
+		when(temporaryImageStorage.read(petImage)).thenReturn(new byte[] {1});
+		when(temporaryImageStorage.read(styleImage)).thenReturn(new byte[] {2});
 		doThrow(new BusinessException(ErrorCode.IMAGE_GENERATION_FAILED))
 			.when(imageGenerationClient)
-			.generate(request);
+			.generate(any(ImageGenerationRequest.class));
 
 		processor.process(event);
 
-		verify(imageStorage).delete("/images/source.png");
-		verify(imageStorage).delete("/images/style.png");
+		verify(temporaryImageStorage).delete(petImage);
+		verify(temporaryImageStorage).delete(styleImage);
 		verify(statusService).fail(1L, ErrorCode.IMAGE_GENERATION_FAILED.getCode());
 	}
 
 	@Test
 	void processDeletesEveryStoredImageAndPersistsFailedStatusWhenCompletionUpdateFails() {
-		ImageGenerationRequest request = new ImageGenerationRequest(
-			"prompt",
-			new byte[] {1},
-			"image/png",
-			null,
-			null
-		);
+		TemporaryImage petImage = new TemporaryImage("pet.tmp", "image/png");
 		BeautyStyleSimulationRequestedEvent event = new BeautyStyleSimulationRequestedEvent(
 			1L,
-			"/images/source.png",
-			null,
-			request
+			"prompt",
+			petImage,
+			null
 		);
-		when(imageGenerationClient.generate(request))
+		when(temporaryImageStorage.read(petImage)).thenReturn(new byte[] {1});
+		when(imageGenerationClient.generate(any(ImageGenerationRequest.class)))
 			.thenReturn(new GeneratedImage(new byte[] {3}, "image/png"));
 		when(imageStorage.store(new byte[] {3}, "image/png"))
 			.thenReturn("/images/generated.png");
@@ -84,7 +83,7 @@ class BeautyStyleSimulationProcessorTest {
 		processor.process(event);
 
 		verify(imageStorage).delete("/images/generated.png");
-		verify(imageStorage).delete("/images/source.png");
+		verify(temporaryImageStorage).delete(petImage);
 		verify(statusService).fail(1L, ErrorCode.INTERNAL_SERVER_ERROR.getCode());
 	}
 }

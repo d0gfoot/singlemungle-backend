@@ -4,7 +4,10 @@ import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 import com.singlemungle.backend.domain.beauty.ai.GeneratedImage;
 import com.singlemungle.backend.domain.beauty.ai.ImageGenerationClient;
+import com.singlemungle.backend.domain.beauty.ai.ImageGenerationRequest;
 import com.singlemungle.backend.domain.beauty.storage.ImageStorage;
+import com.singlemungle.backend.domain.beauty.storage.TemporaryImage;
+import com.singlemungle.backend.domain.beauty.storage.TemporaryImageStorage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ public class BeautyStyleSimulationProcessor {
 
 	private final ImageGenerationClient imageGenerationClient;
 	private final ImageStorage imageStorage;
+	private final TemporaryImageStorage temporaryImageStorage;
 	private final BeautyStyleSimulationStatusService statusService;
 
 	@Async("imageGenerationExecutor")
@@ -28,17 +32,25 @@ public class BeautyStyleSimulationProcessor {
 	public void process(BeautyStyleSimulationRequestedEvent event) {
 		String generatedImageUrl = null;
 		try {
-			GeneratedImage generatedImage = imageGenerationClient.generate(event.generationRequest());
+			TemporaryImage styleImage = event.styleImage();
+			GeneratedImage generatedImage = imageGenerationClient.generate(new ImageGenerationRequest(
+				event.prompt(),
+				temporaryImageStorage.read(event.petImage()),
+				event.petImage().mimeType(),
+				styleImage == null ? null : temporaryImageStorage.read(styleImage),
+				styleImage == null ? null : styleImage.mimeType()
+			));
 			generatedImageUrl = imageStorage.store(generatedImage.bytes(), generatedImage.mimeType());
 			if (!statusService.complete(event.simulationId(), generatedImageUrl)) {
 				deleteQuietly(generatedImageUrl, event.simulationId());
 			}
 		} catch (RuntimeException exception) {
 			deleteQuietly(generatedImageUrl, event.simulationId());
-			deleteQuietly(event.sourceImageUrl(), event.simulationId());
-			deleteQuietly(event.styleImageUrl(), event.simulationId());
 			markFailed(event.simulationId(), failureReason(exception));
-			log.warn("Beauty style simulation failed simulationId={}", event.simulationId());
+			log.warn("Beauty style simulation failed simulationId={}", event.simulationId(), exception);
+		} finally {
+			deleteTemporaryQuietly(event.petImage(), event.simulationId());
+			deleteTemporaryQuietly(event.styleImage(), event.simulationId());
 		}
 	}
 
@@ -55,6 +67,14 @@ public class BeautyStyleSimulationProcessor {
 			imageStorage.delete(imageUrl);
 		} catch (RuntimeException exception) {
 			log.error("Failed to delete beauty style simulation image simulationId={}", simulationId, exception);
+		}
+	}
+
+	private void deleteTemporaryQuietly(TemporaryImage image, Long simulationId) {
+		try {
+			temporaryImageStorage.delete(image);
+		} catch (RuntimeException exception) {
+			log.error("Failed to delete temporary simulation image simulationId={}", simulationId, exception);
 		}
 	}
 

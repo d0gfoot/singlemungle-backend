@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulation;
 import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulationStatus;
+import com.singlemungle.backend.domain.beauty.entity.StyleSimulationSourceType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -20,6 +21,15 @@ public record BeautyStyleSimulationResponse(
 
 	@Schema(description = "미용 스타일 키워드", example = "곰돌이컷")
 	String styleKeyword,
+
+	@Schema(description = "공통 스타일 프리셋 ID")
+	Long stylePresetId,
+
+	@Schema(description = "참고한 자체 리뷰 이미지 ID")
+	Long referenceReviewImageId,
+
+	@Schema(description = "주요 스타일 입력 출처")
+	StyleSimulationSourceType sourceType,
 
 	@Schema(description = "스타일 생성 추가 요청", example = "좀 더 샤프하고 날렵하게")
 	String additionalRequest,
@@ -52,6 +62,9 @@ public record BeautyStyleSimulationResponse(
 				simulation.getPetId(),
 				simulation.getShopId(),
 				simulation.getStyleKeyword(),
+				simulation.getStylePresetId(),
+				simulation.getReferenceReviewImageId(),
+				simulation.getSourceType(),
 				simulation.getAdditionalRequest(),
 				simulation.getSourceImageUrl(),
 				simulation.getStyleImageUrl(),

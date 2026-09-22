@@ -60,12 +60,21 @@ class BeautyControllerTest {
 	}
 
 	@Test
+	void getGroomingStylePresetsReturnsEnabledGlobalPresets() throws Exception {
+		mockMvc.perform(get("/api/v1/beauty/style-presets")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data.length()").value(5))
+			.andExpect(jsonPath("$.data[0].name").value("곰돌이컷"));
+	}
+
+	@Test
 	void createStyleSimulationReturnsPendingAndCompletesAsynchronously() throws Exception {
 		MvcResult result = mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
 				.param("petId", "101")
 				.param("shopId", "301")
-				.param("styleKeyword", "곰돌이컷")
+				.param("stylePresetId", "1")
 				.param("additionalRequest", "좀 더 샤프하고 날렵하게")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isAccepted())
@@ -73,9 +82,11 @@ class BeautyControllerTest {
 			.andExpect(jsonPath("$.data.petId").value(101))
 			.andExpect(jsonPath("$.data.shopId").value(301))
 			.andExpect(jsonPath("$.data.styleKeyword").value("곰돌이컷"))
+			.andExpect(jsonPath("$.data.stylePresetId").value(1))
+			.andExpect(jsonPath("$.data.sourceType").value("PRESET"))
 			.andExpect(jsonPath("$.data.additionalRequest").value("좀 더 샤프하고 날렵하게"))
 			.andExpect(jsonPath("$.data.status").value("PENDING"))
-			.andExpect(jsonPath("$.data.sourceImageUrl").isString())
+			.andExpect(jsonPath("$.data.sourceImageUrl").doesNotExist())
 			.andExpect(jsonPath("$.data.generatedImageUrl").doesNotExist())
 			.andReturn();
 
@@ -89,7 +100,7 @@ class BeautyControllerTest {
 				.file(petImage())
 				.param("petId", "102")
 				.param("shopId", "301")
-				.param("styleKeyword", "곰돌이컷")
+				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("PET_NOT_FOUND"));
@@ -101,7 +112,7 @@ class BeautyControllerTest {
 				.file(petImage())
 				.param("petId", "101")
 				.param("shopId", "302")
-				.param("styleKeyword", "곰돌이컷")
+				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("PLACE_NOT_FOUND"));
@@ -120,7 +131,7 @@ class BeautyControllerTest {
 				.file(invalidImage)
 				.param("petId", "101")
 				.param("shopId", "301")
-				.param("styleKeyword", "곰돌이컷")
+				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -132,7 +143,7 @@ class BeautyControllerTest {
 				.file(petImage())
 				.param("petId", "101")
 				.param("shopId", "301")
-				.param("styleKeyword", "곰돌이컷")
+				.param("stylePresetId", "1")
 				.param("additionalRequest", "a".repeat(501))
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isBadRequest())
@@ -153,7 +164,7 @@ class BeautyControllerTest {
 				.file(petImage())
 				.param("petId", "101")
 				.param("shopId", "301")
-				.param("styleKeyword", "곰돌이컷")
+				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isAccepted())
 			.andExpect(jsonPath("$.data.status").value("PENDING"))
@@ -176,7 +187,7 @@ class BeautyControllerTest {
 				.file(petImage())
 				.param("petId", "101")
 				.param("shopId", "301")
-				.param("styleKeyword", "곰돌이컷")
+				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isAccepted())
 			.andReturn();
@@ -184,9 +195,8 @@ class BeautyControllerTest {
 		Integer simulationId = JsonPath.read(result.getResponse().getContentAsString(), "$.data.simulationId");
 		awaitCompleted(simulationId.longValue());
 		BeautyStyleSimulation simulation = simulationRepository.findById(simulationId.longValue()).orElseThrow();
-		Path sourceImage = storedImagePath(simulation.getSourceImageUrl());
 		Path generatedImage = storedImagePath(simulation.getGeneratedImageUrl());
-		assertThat(sourceImage).exists();
+		assertThat(simulation.getSourceImageUrl()).isNull();
 		assertThat(generatedImage).exists();
 
 		mockMvc.perform(delete("/api/v1/beauty/style-simulations/{simulationId}", simulationId)
@@ -198,7 +208,6 @@ class BeautyControllerTest {
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("STYLE_SIMULATION_NOT_FOUND"));
-		assertThat(sourceImage).doesNotExist();
 		assertThat(generatedImage).doesNotExist();
 	}
 

@@ -8,19 +8,31 @@ import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 import com.singlemungle.backend.common.response.PageResponse;
 import com.singlemungle.backend.domain.beauty.ai.BeautyStylePromptBuilder;
-import com.singlemungle.backend.domain.beauty.ai.ImageGenerationRequest;
+import com.singlemungle.backend.domain.beauty.ai.GroomingStyleContext;
+import com.singlemungle.backend.domain.beauty.ai.PetGroomingContext;
 import com.singlemungle.backend.domain.beauty.dto.response.BeautyStyleSimulationResponse;
 import com.singlemungle.backend.domain.beauty.entity.BeautyStyleSimulation;
+import com.singlemungle.backend.domain.beauty.entity.GroomingStylePreset;
+import com.singlemungle.backend.domain.beauty.entity.StyleSimulationSourceType;
 import com.singlemungle.backend.domain.beauty.repository.BeautyStyleSimulationRepository;
+import com.singlemungle.backend.domain.beauty.repository.GroomingStylePresetRepository;
 import com.singlemungle.backend.domain.beauty.storage.ImageStorage;
+import com.singlemungle.backend.domain.beauty.storage.StoredImage;
+import com.singlemungle.backend.domain.beauty.storage.TemporaryImage;
+import com.singlemungle.backend.domain.beauty.storage.TemporaryImageStorage;
+import com.singlemungle.backend.domain.pet.entity.Pet;
 import com.singlemungle.backend.domain.pet.repository.PetRepository;
 import com.singlemungle.backend.domain.place.entity.PlaceType;
 import com.singlemungle.backend.domain.place.repository.PlaceRepository;
+import com.singlemungle.backend.domain.review.entity.Review;
+import com.singlemungle.backend.domain.review.entity.ReviewImage;
+import com.singlemungle.backend.domain.review.repository.ReviewImageRepository;
+import com.singlemungle.backend.domain.review.repository.ReviewRepository;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.core.io.Resource;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,8 +53,12 @@ public class BeautyStyleSimulationService {
 	private final BeautyStyleSimulationRepository simulationRepository;
 	private final PetRepository petRepository;
 	private final PlaceRepository placeRepository;
+	private final GroomingStylePresetRepository presetRepository;
+	private final ReviewRepository reviewRepository;
+	private final ReviewImageRepository reviewImageRepository;
 	private final BeautyStylePromptBuilder promptBuilder;
 	private final ImageStorage imageStorage;
+	private final TemporaryImageStorage temporaryImageStorage;
 	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
@@ -50,60 +66,69 @@ public class BeautyStyleSimulationService {
 		Long userId,
 		Long petId,
 		Long shopId,
-		String styleKeyword,
+		Long stylePresetId,
+		Long referenceReviewImageId,
 		String additionalRequest,
 		MultipartFile petImage,
 		MultipartFile styleImage
 	) {
-		validateStyleKeyword(styleKeyword);
 		validateAdditionalRequest(additionalRequest);
 		validateImage(petImage, true);
 		validateImage(styleImage, false);
-		validateOwnedPet(userId, petId);
-		validateBeautyShop(shopId);
-
-		String trimmedStyleKeyword = styleKeyword.trim();
+		Pet pet = findOwnedPet(userId, petId);
 		String trimmedAdditionalRequest = trimToNull(additionalRequest);
+		StyleInput styleInput = resolveStyleInput(
+			shopId,
+			stylePresetId,
+			referenceReviewImageId,
+			trimmedAdditionalRequest,
+			styleImage
+		);
 		ImageData petImageData = toImageData(petImage);
-		ImageData styleImageData = toImageData(styleImage);
-		String sourceImageUrl = null;
-		String styleImageUrl = null;
+		TemporaryImage temporaryPetImage = null;
+		TemporaryImage temporaryStyleImage = null;
 		try {
-			sourceImageUrl = imageStorage.store(petImageData.bytes(), petImageData.mimeType());
-			styleImageUrl = styleImageData == null
+			temporaryPetImage = temporaryImageStorage.store(petImageData.bytes(), petImageData.mimeType());
+			temporaryStyleImage = styleInput.referenceImage() == null
 				? null
-				: imageStorage.store(styleImageData.bytes(), styleImageData.mimeType());
-			registerRollbackCleanup(sourceImageUrl, styleImageUrl);
+				: temporaryImageStorage.store(
+					styleInput.referenceImage().bytes(),
+					styleInput.referenceImage().mimeType()
+				);
+			registerRollbackCleanup(temporaryPetImage, temporaryStyleImage);
 
 			BeautyStyleSimulation simulation = simulationRepository.save(new BeautyStyleSimulation(
 				userId,
 				petId,
-				shopId,
-				trimmedStyleKeyword,
+				styleInput.shopId(),
+				styleInput.styleName(),
+				styleInput.stylePresetId(),
+				styleInput.referenceReviewImageId(),
+				styleInput.sourceType(),
 				trimmedAdditionalRequest,
-				sourceImageUrl,
-				styleImageUrl,
+				null,
+				null,
 				STORAGE_PROVIDER
 			));
 
-			ImageGenerationRequest generationRequest = new ImageGenerationRequest(
-				promptBuilder.build(trimmedStyleKeyword, trimmedAdditionalRequest, styleImageData != null),
-				petImageData.bytes(),
-				petImageData.mimeType(),
-				styleImageData == null ? null : styleImageData.bytes(),
-				styleImageData == null ? null : styleImageData.mimeType()
+			PetGroomingContext petContext = promptBuilder.petContext(pet.getBreed(), pet.getWeight(), pet.getMemo());
+			String prompt = promptBuilder.build(
+				styleInput.promptContext(),
+				trimmedAdditionalRequest,
+				temporaryStyleImage != null,
+				petContext
 			);
 			eventPublisher.publishEvent(new BeautyStyleSimulationRequestedEvent(
 				simulation.getId(),
-				sourceImageUrl,
-				styleImageUrl,
-				generationRequest
+				prompt,
+				temporaryPetImage,
+				temporaryStyleImage
 			));
 
 			return BeautyStyleSimulationResponse.from(simulation);
 		} catch (RuntimeException exception) {
-			deleteQuietly(sourceImageUrl);
-			deleteQuietly(styleImageUrl);
+			deleteTemporaryQuietly(temporaryPetImage);
+			deleteTemporaryQuietly(temporaryStyleImage);
 			throw exception;
 		}
 	}
@@ -125,8 +150,6 @@ public class BeautyStyleSimulationService {
 	@Transactional
 	public void deleteSimulation(Long userId, Long simulationId) {
 		BeautyStyleSimulation simulation = findOwnedSimulation(userId, simulationId);
-		imageStorage.delete(simulation.getSourceImageUrl());
-		imageStorage.delete(simulation.getStyleImageUrl());
 		imageStorage.delete(simulation.getGeneratedImageUrl());
 		simulation.delete();
 	}
@@ -136,8 +159,8 @@ public class BeautyStyleSimulationService {
 		return imageStorage.load(fileName);
 	}
 
-	private void validateOwnedPet(Long userId, Long petId) {
-		petRepository.findByIdAndUserId(petId, userId)
+	private Pet findOwnedPet(Long userId, Long petId) {
+		return petRepository.findByIdAndUserId(petId, userId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.PET_NOT_FOUND));
 	}
 
@@ -149,12 +172,6 @@ public class BeautyStyleSimulationService {
 	private BeautyStyleSimulation findOwnedSimulation(Long userId, Long simulationId) {
 		return simulationRepository.findByIdAndUserId(simulationId, userId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.STYLE_SIMULATION_NOT_FOUND));
-	}
-
-	private void validateStyleKeyword(String styleKeyword) {
-		if (styleKeyword == null || styleKeyword.isBlank() || styleKeyword.length() > 100) {
-			throw new BusinessException(ErrorCode.INVALID_REQUEST);
-		}
 	}
 
 	private void validateAdditionalRequest(String additionalRequest) {
@@ -170,7 +187,7 @@ public class BeautyStyleSimulationService {
 		return value.trim();
 	}
 
-	private void registerRollbackCleanup(String sourceImageUrl, String styleImageUrl) {
+	private void registerRollbackCleanup(TemporaryImage petImage, TemporaryImage styleImage) {
 		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
 			return;
 		}
@@ -178,19 +195,90 @@ public class BeautyStyleSimulationService {
 			@Override
 			public void afterCompletion(int status) {
 				if (status != STATUS_COMMITTED) {
-					deleteQuietly(sourceImageUrl);
-					deleteQuietly(styleImageUrl);
+					deleteTemporaryQuietly(petImage);
+					deleteTemporaryQuietly(styleImage);
 				}
 			}
 		});
 	}
 
-	private void deleteQuietly(String imageUrl) {
+	private void deleteTemporaryQuietly(TemporaryImage image) {
 		try {
-			imageStorage.delete(imageUrl);
+			temporaryImageStorage.delete(image);
 		} catch (RuntimeException ignored) {
-			// Preserve the original request failure; scheduled cleanup handles persisted records.
+			// Preserve the original request failure; scheduled cleanup handles temporary files.
 		}
+	}
+
+	private StyleInput resolveStyleInput(
+		Long requestedShopId,
+		Long stylePresetId,
+		Long referenceReviewImageId,
+		String additionalRequest,
+		MultipartFile uploadedStyleImage
+	) {
+		if (referenceReviewImageId != null && uploadedStyleImage != null && !uploadedStyleImage.isEmpty()) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST);
+		}
+
+		GroomingStylePreset preset = stylePresetId == null
+			? null
+			: presetRepository.findByIdAndEnabledTrue(stylePresetId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.STYLE_PRESET_NOT_FOUND));
+		ReviewImage reviewImage = referenceReviewImageId == null
+			? null
+			: reviewImageRepository.findById(referenceReviewImageId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_IMAGE_NOT_FOUND));
+
+		Review review = null;
+		ImageData referenceImage = null;
+		Long resolvedShopId = requestedShopId;
+		if (reviewImage != null) {
+			if (!reviewImage.isAiReferenceAllowed()) {
+				throw new BusinessException(ErrorCode.AI_REFERENCE_NOT_ALLOWED);
+			}
+			review = reviewRepository.findById(reviewImage.getReviewId())
+				.orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
+			if (resolvedShopId != null && !resolvedShopId.equals(review.getPlaceId())) {
+				throw new BusinessException(ErrorCode.INVALID_REQUEST);
+			}
+			resolvedShopId = review.getPlaceId();
+			StoredImage storedImage = imageStorage.read(reviewImage.getImageUrl());
+			referenceImage = new ImageData(storedImage.bytes(), storedImage.mimeType());
+		} else if (uploadedStyleImage != null && !uploadedStyleImage.isEmpty()) {
+			referenceImage = toImageData(uploadedStyleImage);
+		}
+
+		if (resolvedShopId != null) {
+			validateBeautyShop(resolvedShopId);
+		}
+		if (preset == null && referenceImage == null && additionalRequest == null) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST);
+		}
+
+		String styleName = preset != null
+			? preset.getName()
+			: review == null ? null : review.getGroomingStyleName();
+		GroomingStyleContext promptContext = preset == null
+			? new GroomingStyleContext(styleName, null, null)
+			: new GroomingStyleContext(
+				preset.getName(), preset.getPromptDescription(), preset.getNegativePrompt()
+			);
+		StyleSimulationSourceType sourceType = reviewImage != null
+			? StyleSimulationSourceType.REVIEW_IMAGE
+			: uploadedStyleImage != null && !uploadedStyleImage.isEmpty()
+				? StyleSimulationSourceType.USER_UPLOAD
+				: preset != null ? StyleSimulationSourceType.PRESET : StyleSimulationSourceType.CUSTOM_REQUEST;
+
+		return new StyleInput(
+			resolvedShopId,
+			preset == null ? null : preset.getId(),
+			reviewImage == null ? null : reviewImage.getId(),
+			styleName,
+			sourceType,
+			promptContext,
+			referenceImage
+		);
 	}
 
 	private void validateImage(MultipartFile image, boolean required) {
@@ -219,6 +307,17 @@ public class BeautyStyleSimulationService {
 	private record ImageData(
 		byte[] bytes,
 		String mimeType
+	) {
+	}
+
+	private record StyleInput(
+		Long shopId,
+		Long stylePresetId,
+		Long referenceReviewImageId,
+		String styleName,
+		StyleSimulationSourceType sourceType,
+		GroomingStyleContext promptContext,
+		ImageData referenceImage
 	) {
 	}
 }

@@ -51,8 +51,11 @@ public class BeautyStyleSimulationController {
 		    "petId": 7,
 		    "shopId": 3,
 		    "styleKeyword": "곰돌이컷",
+		    "stylePresetId": 1,
+		    "referenceReviewImageId": null,
+		    "sourceType": "PRESET",
 		    "additionalRequest": "좀 더 샤프하고 날렵하게",
-		    "sourceImageUrl": "/api/v1/beauty/style-simulations/images/source.jpg",
+		    "sourceImageUrl": null,
 		    "styleImageUrl": null,
 		    "generatedImageUrl": null,
 		    "status": "PENDING",
@@ -72,8 +75,11 @@ public class BeautyStyleSimulationController {
 		    "petId": 7,
 		    "shopId": 3,
 		    "styleKeyword": "곰돌이컷",
+		    "stylePresetId": 1,
+		    "referenceReviewImageId": null,
+		    "sourceType": "PRESET",
 		    "additionalRequest": "좀 더 샤프하고 날렵하게",
-		    "sourceImageUrl": "/api/v1/beauty/style-simulations/images/source.jpg",
+		    "sourceImageUrl": null,
 		    "styleImageUrl": null,
 		    "generatedImageUrl": "/api/v1/beauty/style-simulations/images/generated.jpg",
 		    "status": "COMPLETED",
@@ -93,6 +99,9 @@ public class BeautyStyleSimulationController {
 		    "petId": 7,
 		    "shopId": 3,
 		    "styleKeyword": "곰돌이컷",
+		    "stylePresetId": 1,
+		    "referenceReviewImageId": null,
+		    "sourceType": "PRESET",
 		    "additionalRequest": "좀 더 샤프하고 날렵하게",
 		    "sourceImageUrl": null,
 		    "styleImageUrl": null,
@@ -127,10 +136,12 @@ public class BeautyStyleSimulationController {
 		@AuthenticationPrincipal CustomUserPrincipal principal,
 		@Parameter(description = "반려동물 ID", example = "101")
 		@RequestParam Long petId,
-		@Parameter(description = "미용샵 ID", example = "1")
-		@RequestParam Long shopId,
-			@Parameter(description = "미용 스타일 키워드", example = "곰돌이컷")
-			@RequestParam String styleKeyword,
+		@Parameter(description = "미용샵 ID. 리뷰 이미지를 선택하면 생략할 수 있습니다.", example = "1")
+		@RequestParam(required = false) Long shopId,
+			@Parameter(description = "전역 미용 스타일 프리셋 ID", example = "1")
+			@RequestParam(required = false) Long stylePresetId,
+			@Parameter(description = "AI 참고 사용에 동의된 자체 리뷰 이미지 ID", example = "10")
+			@RequestParam(required = false) Long referenceReviewImageId,
 			@Parameter(description = "스타일 생성 추가 요청. 선택값입니다.", example = "좀 더 샤프하고 날렵하게")
 			@RequestParam(required = false) String additionalRequest,
 			@Parameter(
@@ -148,7 +159,8 @@ public class BeautyStyleSimulationController {
 			principal.userId(),
 				petId,
 				shopId,
-				styleKeyword,
+				stylePresetId,
+				referenceReviewImageId,
 				additionalRequest,
 				petImage,
 				styleImage
