@@ -26,6 +26,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
 	implementation("org.flywaydb:flyway-core")
+	implementation("com.google.auth:google-auth-library-oauth2-http:1.51.0")
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")

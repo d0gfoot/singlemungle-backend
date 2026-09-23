@@ -1,6 +1,7 @@
 package com.singlemungle.backend.domain.place.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.singlemungle.backend.domain.place.entity.Place;
 import com.singlemungle.backend.domain.place.entity.PlaceType;
@@ -14,6 +15,8 @@ import org.springframework.data.repository.query.Param;
 public interface PlaceRepository extends JpaRepository<Place, Long> {
 
 	List<Place> findByPlaceTypeIn(List<PlaceType> placeTypes);
+
+	Optional<Place> findByIdAndPlaceType(Long id, PlaceType placeType);
 
 	@Query("""
 		select p
