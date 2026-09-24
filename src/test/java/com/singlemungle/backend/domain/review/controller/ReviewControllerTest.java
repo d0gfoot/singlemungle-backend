@@ -42,12 +42,12 @@ class ReviewControllerTest {
 	void createAndReadReviewWithAiReferenceConsent() throws Exception {
 		MvcResult created = createReview(true, bearerToken(1L))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.shopId").value(301))
+			.andExpect(jsonPath("$.data.googlePlaceId").value("ChIJ-demo-beauty-shop"))
 			.andExpect(jsonPath("$.data.images[0].aiReferenceAllowed").value(true))
 			.andReturn();
 		Integer reviewId = JsonPath.read(created.getResponse().getContentAsString(), "$.data.reviewId");
 
-		mockMvc.perform(get("/api/v1/beauty-shops/301/reviews/{reviewId}", reviewId)
+		mockMvc.perform(get("/api/v1/beauty-shops/ChIJ-demo-beauty-shop/reviews/{reviewId}", reviewId)
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(1L)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.data.groomingStyleName").value("물개컷"));
@@ -58,7 +58,7 @@ class ReviewControllerTest {
 		MvcResult created = createReview(false, bearerToken(1L)).andReturn();
 		Integer reviewId = JsonPath.read(created.getResponse().getContentAsString(), "$.data.reviewId");
 
-		mockMvc.perform(patch("/api/v1/beauty-shops/301/reviews/{reviewId}", reviewId)
+		mockMvc.perform(patch("/api/v1/beauty-shops/ChIJ-demo-beauty-shop/reviews/{reviewId}", reviewId)
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(2L))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
@@ -67,11 +67,11 @@ class ReviewControllerTest {
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("REVIEW_NOT_FOUND"));
 
-		mockMvc.perform(delete("/api/v1/beauty-shops/301/reviews/{reviewId}", reviewId)
+		mockMvc.perform(delete("/api/v1/beauty-shops/ChIJ-demo-beauty-shop/reviews/{reviewId}", reviewId)
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(1L)))
 			.andExpect(status().isOk());
 
-		mockMvc.perform(get("/api/v1/beauty-shops/301/reviews/{reviewId}", reviewId)
+		mockMvc.perform(get("/api/v1/beauty-shops/ChIJ-demo-beauty-shop/reviews/{reviewId}", reviewId)
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(1L)))
 			.andExpect(status().isNotFound());
 	}
@@ -89,7 +89,7 @@ class ReviewControllerTest {
 				.param("referenceReviewImageId", reviewImageId.toString())
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(1L)))
 			.andExpect(status().isAccepted())
-			.andExpect(jsonPath("$.data.shopId").value(301))
+			.andExpect(jsonPath("$.data.googlePlaceId").value("ChIJ-demo-beauty-shop"))
 			.andExpect(jsonPath("$.data.referenceReviewImageId").value(reviewImageId))
 			.andExpect(jsonPath("$.data.sourceType").value("REVIEW_IMAGE"));
 
@@ -113,7 +113,7 @@ class ReviewControllerTest {
 		MockMultipartFile image = new MockMultipartFile(
 			"images", "result.png", "image/png", new byte[] {1, 2, 3}
 		);
-		return mockMvc.perform(multipart("/api/v1/beauty-shops/301/reviews")
+		return mockMvc.perform(multipart("/api/v1/beauty-shops/ChIJ-demo-beauty-shop/reviews")
 			.file(image)
 			.param("rating", "5")
 			.param("content", "미용 결과가 만족스러워요")

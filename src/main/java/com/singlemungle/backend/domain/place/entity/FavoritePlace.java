@@ -4,22 +4,17 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "favorite_places")
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FavoritePlace {
 
@@ -27,22 +22,25 @@ public class FavoritePlace {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "place_id")
-    private Place place;
+	@Column(name = "google_place_id", nullable = false, length = 255)
+	private String googlePlaceId;
 
     @Column(columnDefinition = "TEXT")
     private String memo;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public FavoritePlace(Long userId, Place place, String memo) {
+	public FavoritePlace(Long userId, String googlePlaceId, String memo) {
         this.userId = userId;
-        this.place = place;
+		this.googlePlaceId = googlePlaceId;
         this.memo = memo;
     }
+
+	public void updateMemo(String memo) {
+		this.memo = memo;
+	}
 }

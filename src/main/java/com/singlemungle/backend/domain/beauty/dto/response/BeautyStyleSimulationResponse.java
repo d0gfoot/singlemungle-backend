@@ -16,8 +16,8 @@ public record BeautyStyleSimulationResponse(
 	@Schema(description = "반려동물 ID", example = "101")
 	Long petId,
 
-	@Schema(description = "미용샵 ID", example = "1")
-	Long shopId,
+	@Schema(description = "Google Place ID", example = "ChIJN1t_tDeuEmsRUsoyG83frY4")
+	String googlePlaceId,
 
 	@Schema(description = "미용 스타일 키워드", example = "곰돌이컷")
 	String styleKeyword,
@@ -60,7 +60,7 @@ public record BeautyStyleSimulationResponse(
 		return new BeautyStyleSimulationResponse(
 			simulation.getId(),
 				simulation.getPetId(),
-				simulation.getShopId(),
+				simulation.getGooglePlaceId(),
 				simulation.getStyleKeyword(),
 				simulation.getStylePresetId(),
 				simulation.getReferenceReviewImageId(),

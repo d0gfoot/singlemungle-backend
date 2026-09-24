@@ -1,6 +1,7 @@
 package com.singlemungle.backend.common.exception;
 
 import com.singlemungle.backend.common.response.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             MethodArgumentNotValidException.class,
             HandlerMethodValidationException.class,
+			ConstraintViolationException.class,
             IllegalArgumentException.class
     })
     public ResponseEntity<ApiResponse<Void>> handleInvalidRequest(Exception exception) {

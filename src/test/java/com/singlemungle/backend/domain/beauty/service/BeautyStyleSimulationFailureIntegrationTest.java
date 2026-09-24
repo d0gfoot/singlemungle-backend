@@ -62,7 +62,7 @@ class BeautyStyleSimulationFailureIntegrationTest {
 		MvcResult result = mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(new MockMultipartFile("petImage", "pet.png", "image/png", new byte[] {1, 2, 3}))
 				.param("petId", "101")
-				.param("shopId", "301")
+				.param("googlePlaceId", "ChIJ-demo-beauty-shop")
 				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isAccepted())

@@ -56,7 +56,7 @@ IMAGE_STORAGE_TEMP_RETENTION_HOURS=24
 - [ ] 팀이 소유하거나 사용 허가를 받은 반려견 미용 결과 이미지를 준비합니다.
 - [ ] 이미지를 `demo/review-images`에 두고 저장소에는 커밋하지 않습니다.
 - [ ] 운영 또는 시연 DB의 실제 사용자·미용샵 ID를 확인합니다.
-- [ ] `scripts/demo-reviews.json`의 `userId`, `shopId`, 파일명을 실제 값으로 수정합니다.
+- [ ] 데모 리뷰 데이터의 `userId`, `googlePlaceId`, 이미지 파일명을 실제 값으로 수정합니다.
 - [ ] PostgreSQL 컨테이너와 Flyway 마이그레이션 실행 후 아래 명령을 실행합니다.
 
 ```bash

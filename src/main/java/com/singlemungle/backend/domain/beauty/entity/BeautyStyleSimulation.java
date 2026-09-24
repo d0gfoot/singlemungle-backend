@@ -33,8 +33,8 @@ public class BeautyStyleSimulation {
 	@Column(name = "pet_id", nullable = false)
 	private Long petId;
 
-	@Column(name = "shop_id")
-	private Long shopId;
+	@Column(name = "google_place_id", length = 255)
+	private String googlePlaceId;
 
 	@Column(name = "style_keyword", length = 100)
 	private String styleKeyword;
@@ -86,7 +86,7 @@ public class BeautyStyleSimulation {
 	public BeautyStyleSimulation(
 		Long userId,
 		Long petId,
-		Long shopId,
+		String googlePlaceId,
 		String styleKeyword,
 		Long stylePresetId,
 		Long referenceReviewImageId,
@@ -98,7 +98,7 @@ public class BeautyStyleSimulation {
 	) {
 		this.userId = userId;
 		this.petId = petId;
-		this.shopId = shopId;
+		this.googlePlaceId = googlePlaceId;
 		this.styleKeyword = styleKeyword;
 		this.stylePresetId = stylePresetId;
 		this.referenceReviewImageId = referenceReviewImageId;
