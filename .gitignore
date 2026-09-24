@@ -1,0 +1,67 @@
+HELP.md
+
+### Gradle ###
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+logs/
+*.log
+
+### Environment ###
+.env
+.env.*
+!.env.example
+
+### Local Spring config ###
+src/main/resources/application-secret.yml
+src/main/resources/application-secret.yaml
+src/main/resources/application-secret.properties
+
+### Local scripts ###
+scripts/
+
+### Local planning docs ###
+docs/ai-style-simulation.md
+
+### Demo image binaries ###
+demo/review-images/*
+!demo/review-images/README.md
