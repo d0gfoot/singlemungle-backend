@@ -134,7 +134,9 @@ POST /api/v1/auth/oauth/login
 Authorization: Bearer {accessToken}
 ```
 
-Swagger UI에서 보호 API를 테스트할 때는 우측 상단 `Authorize`에 access token을 입력한 뒤 실행합니다. access token 없이 `POST /api/v1/pets` 같은 보호 API를 호출하면 `403`으로 차단되고 DB에 저장되지 않습니다.
+Swagger UI에서 보호 API를 테스트할 때는 우측 상단 `Authorize`에 access token을 입력한 뒤 실행합니다. access token 없이 `POST /api/v1/pets` 같은 보호 API를 호출하면 `401` 공통 오류 응답이 반환되고 DB에 저장되지 않습니다.
+
+일반 JSON API의 성공과 실패 응답은 모두 `code`, `message`, `data` 구조를 사용합니다. 인증 실패는 `401`, 권한 부족은 `403`, 잘못된 요청은 `400`, 없는 API는 `404`, 지원하지 않는 메서드는 `405`, 지원하지 않는 Content-Type은 `415`, 업로드 크기 초과는 `413`으로 구분합니다. 이미지 파일 조회 성공 응답은 바이너리이므로 공통 JSON으로 감싸지 않습니다.
 
 ## 주요 API Path
 
