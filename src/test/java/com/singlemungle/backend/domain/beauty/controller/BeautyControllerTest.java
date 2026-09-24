@@ -49,17 +49,6 @@ class BeautyControllerTest {
 	private BeautyStyleSimulationRepository simulationRepository;
 
 	@Test
-	void getBeautyStylesReturnsShopStyles() throws Exception {
-		mockMvc.perform(get("/api/v1/beauty-shops/{shopId}/styles", 301)
-				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").value("SUCCESS"))
-			.andExpect(jsonPath("$.data.length()").value(2))
-			.andExpect(jsonPath("$.data[0].styleId").value(401))
-			.andExpect(jsonPath("$.data[0].styleName").value("곰돌이컷"));
-	}
-
-	@Test
 	void getGroomingStylePresetsReturnsEnabledGlobalPresets() throws Exception {
 		mockMvc.perform(get("/api/v1/beauty/style-presets")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
@@ -73,14 +62,14 @@ class BeautyControllerTest {
 		MvcResult result = mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
 				.param("petId", "101")
-				.param("shopId", "301")
+				.param("googlePlaceId", "ChIJ-demo-beauty-shop")
 				.param("stylePresetId", "1")
 				.param("additionalRequest", "좀 더 샤프하고 날렵하게")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isAccepted())
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
 			.andExpect(jsonPath("$.data.petId").value(101))
-			.andExpect(jsonPath("$.data.shopId").value(301))
+			.andExpect(jsonPath("$.data.googlePlaceId").value("ChIJ-demo-beauty-shop"))
 			.andExpect(jsonPath("$.data.styleKeyword").value("곰돌이컷"))
 			.andExpect(jsonPath("$.data.stylePresetId").value(1))
 			.andExpect(jsonPath("$.data.sourceType").value("PRESET"))
@@ -99,7 +88,7 @@ class BeautyControllerTest {
 		mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
 				.param("petId", "102")
-				.param("shopId", "301")
+				.param("googlePlaceId", "ChIJ-demo-beauty-shop")
 				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isNotFound())
@@ -107,15 +96,15 @@ class BeautyControllerTest {
 	}
 
 	@Test
-	void createStyleSimulationRequiresBeautyShop() throws Exception {
+	void createStyleSimulationValidatesGooglePlaceId() throws Exception {
 		mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
 				.param("petId", "101")
-				.param("shopId", "302")
+				.param("googlePlaceId", "x".repeat(256))
 				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
-			.andExpect(status().isNotFound())
-			.andExpect(jsonPath("$.code").value("PLACE_NOT_FOUND"));
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
 	}
 
 	@Test
@@ -130,7 +119,7 @@ class BeautyControllerTest {
 		mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(invalidImage)
 				.param("petId", "101")
-				.param("shopId", "301")
+				.param("googlePlaceId", "ChIJ-demo-beauty-shop")
 				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 				.andExpect(status().isBadRequest())
@@ -142,7 +131,7 @@ class BeautyControllerTest {
 		mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
 				.param("petId", "101")
-				.param("shopId", "301")
+				.param("googlePlaceId", "ChIJ-demo-beauty-shop")
 				.param("stylePresetId", "1")
 				.param("additionalRequest", "a".repeat(501))
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
@@ -163,7 +152,7 @@ class BeautyControllerTest {
 		mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
 				.param("petId", "101")
-				.param("shopId", "301")
+				.param("googlePlaceId", "ChIJ-demo-beauty-shop")
 				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isAccepted())
@@ -186,7 +175,7 @@ class BeautyControllerTest {
 		MvcResult result = mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
 				.param("petId", "101")
-				.param("shopId", "301")
+				.param("googlePlaceId", "ChIJ-demo-beauty-shop")
 				.param("stylePresetId", "1")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isAccepted())

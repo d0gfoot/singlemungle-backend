@@ -7,8 +7,7 @@ import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
 import com.singlemungle.backend.common.response.PageResponse;
 import com.singlemungle.backend.domain.beauty.storage.ImageStorage;
-import com.singlemungle.backend.domain.place.entity.PlaceType;
-import com.singlemungle.backend.domain.place.repository.PlaceRepository;
+import com.singlemungle.backend.domain.place.service.BeautyShopPlaceService;
 import com.singlemungle.backend.domain.review.dto.request.ReviewUpdateRequest;
 import com.singlemungle.backend.domain.review.dto.response.ReviewImageResponse;
 import com.singlemungle.backend.domain.review.dto.response.ReviewResponse;
@@ -35,27 +34,27 @@ public class ReviewService {
 
 	private final ReviewRepository reviewRepository;
 	private final ReviewImageRepository reviewImageRepository;
-	private final PlaceRepository placeRepository;
+	private final BeautyShopPlaceService beautyShopPlaceService;
 	private final ImageStorage imageStorage;
 
 	@Transactional
 	public ReviewResponse create(
 		Long userId,
-		Long shopId,
+		String googlePlaceId,
 		int rating,
 		String content,
 		String groomingStyleName,
 		boolean aiReferenceAllowed,
 		List<MultipartFile> images
 	) {
-		validateBeautyShop(shopId);
+		String normalizedPlaceId = beautyShopPlaceService.getVerifiedBeautyShop(googlePlaceId).googlePlaceId();
 		validateReview(rating, content, groomingStyleName);
 		List<MultipartFile> safeImages = images == null ? List.of() : images;
 		validateImages(safeImages);
 
 		Review review = reviewRepository.save(new Review(
 			userId,
-			shopId,
+			normalizedPlaceId,
 			rating,
 			content.trim(),
 			trimToNull(groomingStyleName)
@@ -80,23 +79,22 @@ public class ReviewService {
 	}
 
 	@Transactional(readOnly = true)
-	public PageResponse<ReviewResponse> getReviews(Long shopId, Pageable pageable) {
-		validateBeautyShop(shopId);
-		Page<ReviewResponse> page = reviewRepository.findByPlaceIdOrderByCreatedAtDesc(shopId, pageable)
+	public PageResponse<ReviewResponse> getReviews(String googlePlaceId, Pageable pageable) {
+		String normalizedPlaceId = beautyShopPlaceService.normalize(googlePlaceId);
+		Page<ReviewResponse> page = reviewRepository.findByGooglePlaceIdOrderByCreatedAtDesc(normalizedPlaceId, pageable)
 			.map(this::toResponse);
 		return PageResponse.from(page);
 	}
 
 	@Transactional(readOnly = true)
-	public ReviewResponse getReview(Long shopId, Long reviewId) {
-		validateBeautyShop(shopId);
-		return toResponse(findReview(shopId, reviewId));
+	public ReviewResponse getReview(String googlePlaceId, Long reviewId) {
+		return toResponse(findReview(beautyShopPlaceService.normalize(googlePlaceId), reviewId));
 	}
 
 	@Transactional
-	public ReviewResponse update(Long userId, Long shopId, Long reviewId, ReviewUpdateRequest request) {
+	public ReviewResponse update(Long userId, String googlePlaceId, Long reviewId, ReviewUpdateRequest request) {
 		validateReview(request.rating(), request.content(), request.groomingStyleName());
-		Review review = findOwnedReview(userId, shopId, reviewId);
+		Review review = findOwnedReview(userId, googlePlaceId, reviewId);
 		review.update(request.rating(), request.content().trim(), trimToNull(request.groomingStyleName()));
 		List<ReviewImage> images = reviewImageRepository.findByReviewIdOrderByIdAsc(reviewId);
 		images.forEach(image -> image.updateAiReferenceAllowed(request.aiReferenceAllowed()));
@@ -104,8 +102,8 @@ public class ReviewService {
 	}
 
 	@Transactional
-	public void delete(Long userId, Long shopId, Long reviewId) {
-		Review review = findOwnedReview(userId, shopId, reviewId);
+	public void delete(Long userId, String googlePlaceId, Long reviewId) {
+		Review review = findOwnedReview(userId, googlePlaceId, reviewId);
 		List<ReviewImage> images = reviewImageRepository.findByReviewIdOrderByIdAsc(reviewId);
 		images.forEach(image -> {
 			imageStorage.delete(image.getImageUrl());
@@ -122,19 +120,14 @@ public class ReviewService {
 		return ReviewResponse.from(review, images.stream().map(ReviewImageResponse::from).toList());
 	}
 
-	private Review findReview(Long shopId, Long reviewId) {
-		return reviewRepository.findByIdAndPlaceId(reviewId, shopId)
+	private Review findReview(String googlePlaceId, Long reviewId) {
+		return reviewRepository.findByIdAndGooglePlaceId(reviewId, googlePlaceId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
 	}
 
-	private Review findOwnedReview(Long userId, Long shopId, Long reviewId) {
-		return reviewRepository.findByIdAndPlaceIdAndUserId(reviewId, shopId, userId)
+	private Review findOwnedReview(Long userId, String googlePlaceId, Long reviewId) {
+		return reviewRepository.findByIdAndGooglePlaceIdAndUserId(reviewId, googlePlaceId, userId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
-	}
-
-	private void validateBeautyShop(Long shopId) {
-		placeRepository.findByIdAndPlaceType(shopId, PlaceType.BEAUTY)
-			.orElseThrow(() -> new BusinessException(ErrorCode.PLACE_NOT_FOUND));
 	}
 
 	private void validateReview(int rating, String content, String groomingStyleName) {

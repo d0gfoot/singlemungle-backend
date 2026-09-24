@@ -22,8 +22,7 @@ import com.singlemungle.backend.domain.beauty.storage.TemporaryImage;
 import com.singlemungle.backend.domain.beauty.storage.TemporaryImageStorage;
 import com.singlemungle.backend.domain.pet.entity.Pet;
 import com.singlemungle.backend.domain.pet.repository.PetRepository;
-import com.singlemungle.backend.domain.place.entity.PlaceType;
-import com.singlemungle.backend.domain.place.repository.PlaceRepository;
+import com.singlemungle.backend.domain.place.service.BeautyShopPlaceService;
 import com.singlemungle.backend.domain.review.entity.Review;
 import com.singlemungle.backend.domain.review.entity.ReviewImage;
 import com.singlemungle.backend.domain.review.repository.ReviewImageRepository;
@@ -52,7 +51,7 @@ public class BeautyStyleSimulationService {
 
 	private final BeautyStyleSimulationRepository simulationRepository;
 	private final PetRepository petRepository;
-	private final PlaceRepository placeRepository;
+	private final BeautyShopPlaceService beautyShopPlaceService;
 	private final GroomingStylePresetRepository presetRepository;
 	private final ReviewRepository reviewRepository;
 	private final ReviewImageRepository reviewImageRepository;
@@ -65,7 +64,7 @@ public class BeautyStyleSimulationService {
 	public BeautyStyleSimulationResponse createSimulation(
 		Long userId,
 		Long petId,
-		Long shopId,
+		String googlePlaceId,
 		Long stylePresetId,
 		Long referenceReviewImageId,
 		String additionalRequest,
@@ -78,7 +77,7 @@ public class BeautyStyleSimulationService {
 		Pet pet = findOwnedPet(userId, petId);
 		String trimmedAdditionalRequest = trimToNull(additionalRequest);
 		StyleInput styleInput = resolveStyleInput(
-			shopId,
+			googlePlaceId,
 			stylePresetId,
 			referenceReviewImageId,
 			trimmedAdditionalRequest,
@@ -100,7 +99,7 @@ public class BeautyStyleSimulationService {
 			BeautyStyleSimulation simulation = simulationRepository.save(new BeautyStyleSimulation(
 				userId,
 				petId,
-				styleInput.shopId(),
+				styleInput.googlePlaceId(),
 				styleInput.styleName(),
 				styleInput.stylePresetId(),
 				styleInput.referenceReviewImageId(),
@@ -164,9 +163,11 @@ public class BeautyStyleSimulationService {
 			.orElseThrow(() -> new BusinessException(ErrorCode.PET_NOT_FOUND));
 	}
 
-	private void validateBeautyShop(Long shopId) {
-		placeRepository.findByIdAndPlaceType(shopId, PlaceType.BEAUTY)
-			.orElseThrow(() -> new BusinessException(ErrorCode.PLACE_NOT_FOUND));
+	private void validateBeautyShop(String googlePlaceId) {
+		if (googlePlaceId == null || googlePlaceId.isBlank() || googlePlaceId.length() > 255) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST);
+		}
+		beautyShopPlaceService.getVerifiedBeautyShop(googlePlaceId);
 	}
 
 	private BeautyStyleSimulation findOwnedSimulation(Long userId, Long simulationId) {
@@ -211,7 +212,7 @@ public class BeautyStyleSimulationService {
 	}
 
 	private StyleInput resolveStyleInput(
-		Long requestedShopId,
+		String requestedGooglePlaceId,
 		Long stylePresetId,
 		Long referenceReviewImageId,
 		String additionalRequest,
@@ -232,25 +233,25 @@ public class BeautyStyleSimulationService {
 
 		Review review = null;
 		ImageData referenceImage = null;
-		Long resolvedShopId = requestedShopId;
+		String resolvedGooglePlaceId = requestedGooglePlaceId;
 		if (reviewImage != null) {
 			if (!reviewImage.isAiReferenceAllowed()) {
 				throw new BusinessException(ErrorCode.AI_REFERENCE_NOT_ALLOWED);
 			}
 			review = reviewRepository.findById(reviewImage.getReviewId())
 				.orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
-			if (resolvedShopId != null && !resolvedShopId.equals(review.getPlaceId())) {
+			if (resolvedGooglePlaceId != null && !resolvedGooglePlaceId.equals(review.getGooglePlaceId())) {
 				throw new BusinessException(ErrorCode.INVALID_REQUEST);
 			}
-			resolvedShopId = review.getPlaceId();
+			resolvedGooglePlaceId = review.getGooglePlaceId();
 			StoredImage storedImage = imageStorage.read(reviewImage.getImageUrl());
 			referenceImage = new ImageData(storedImage.bytes(), storedImage.mimeType());
 		} else if (uploadedStyleImage != null && !uploadedStyleImage.isEmpty()) {
 			referenceImage = toImageData(uploadedStyleImage);
 		}
 
-		if (resolvedShopId != null) {
-			validateBeautyShop(resolvedShopId);
+		if (resolvedGooglePlaceId != null) {
+			validateBeautyShop(resolvedGooglePlaceId);
 		}
 		if (preset == null && referenceImage == null && additionalRequest == null) {
 			throw new BusinessException(ErrorCode.INVALID_REQUEST);
@@ -271,7 +272,7 @@ public class BeautyStyleSimulationService {
 				: preset != null ? StyleSimulationSourceType.PRESET : StyleSimulationSourceType.CUSTOM_REQUEST;
 
 		return new StyleInput(
-			resolvedShopId,
+			resolvedGooglePlaceId,
 			preset == null ? null : preset.getId(),
 			reviewImage == null ? null : reviewImage.getId(),
 			styleName,
@@ -311,7 +312,7 @@ public class BeautyStyleSimulationService {
 	}
 
 	private record StyleInput(
-		Long shopId,
+		String googlePlaceId,
 		Long stylePresetId,
 		Long referenceReviewImageId,
 		String styleName,

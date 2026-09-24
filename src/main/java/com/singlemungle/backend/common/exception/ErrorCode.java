@@ -6,6 +6,9 @@ public enum ErrorCode {
 
 	INVALID_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "잘못된 요청"),
 	PLACE_NOT_FOUND(HttpStatus.NOT_FOUND, "PLACE_NOT_FOUND", "장소를 찾을 수 없습니다"),
+	PLACE_PROVIDER_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "PLACE_PROVIDER_UNAVAILABLE", "장소 제공자 연결에 실패했습니다"),
+	PLACE_PROVIDER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "PLACE_PROVIDER_TIMEOUT", "장소 제공자 응답 시간이 초과되었습니다"),
+	PLACE_PROVIDER_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "PLACE_PROVIDER_RATE_LIMITED", "장소 조회 요청이 너무 많습니다"),
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "사용자를 찾을 수 없습니다"),
 	PET_NOT_FOUND(HttpStatus.NOT_FOUND, "PET_NOT_FOUND", "반려동물을 찾을 수 없습니다"),
 	HEALTH_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "HEALTH_RECORD_NOT_FOUND", "건강 기록을 찾을 수 없습니다"),

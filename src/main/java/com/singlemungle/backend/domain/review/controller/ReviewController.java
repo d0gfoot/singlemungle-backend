@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/v1/beauty-shops/{shopId}/reviews")
+@RequestMapping("/api/v1/beauty-shops/{googlePlaceId}/reviews")
 @RequiredArgsConstructor
 @Tag(name = "BeautyReview", description = "미용샵 자체 리뷰 API")
 @SecurityRequirement(name = "bearerAuth")
@@ -43,7 +43,7 @@ public class ReviewController {
 	@Operation(summary = "미용샵 리뷰 작성")
 	public ApiResponse<ReviewResponse> create(
 		@AuthenticationPrincipal CustomUserPrincipal principal,
-		@PathVariable Long shopId,
+		@PathVariable String googlePlaceId,
 		@RequestParam int rating,
 		@RequestParam String content,
 		@RequestParam(required = false) String groomingStyleName,
@@ -51,41 +51,41 @@ public class ReviewController {
 		@RequestPart(required = false) List<MultipartFile> images
 	) {
 		return ApiResponse.success(reviewService.create(
-			principal.userId(), shopId, rating, content, groomingStyleName, aiReferenceAllowed, images
+			principal.userId(), googlePlaceId, rating, content, groomingStyleName, aiReferenceAllowed, images
 		));
 	}
 
 	@GetMapping
 	@Operation(summary = "미용샵 리뷰 목록 조회")
-	public ApiResponse<PageResponse<ReviewResponse>> getReviews(@PathVariable Long shopId, Pageable pageable) {
-		return ApiResponse.success(reviewService.getReviews(shopId, pageable));
+	public ApiResponse<PageResponse<ReviewResponse>> getReviews(@PathVariable String googlePlaceId, Pageable pageable) {
+		return ApiResponse.success(reviewService.getReviews(googlePlaceId, pageable));
 	}
 
 	@GetMapping("/{reviewId}")
 	@Operation(summary = "미용샵 리뷰 상세 조회")
-	public ApiResponse<ReviewResponse> getReview(@PathVariable Long shopId, @PathVariable Long reviewId) {
-		return ApiResponse.success(reviewService.getReview(shopId, reviewId));
+	public ApiResponse<ReviewResponse> getReview(@PathVariable String googlePlaceId, @PathVariable Long reviewId) {
+		return ApiResponse.success(reviewService.getReview(googlePlaceId, reviewId));
 	}
 
 	@PatchMapping("/{reviewId}")
 	@Operation(summary = "내 미용샵 리뷰 수정")
 	public ApiResponse<ReviewResponse> update(
 		@AuthenticationPrincipal CustomUserPrincipal principal,
-		@PathVariable Long shopId,
+		@PathVariable String googlePlaceId,
 		@PathVariable Long reviewId,
 		@Valid @RequestBody ReviewUpdateRequest request
 	) {
-		return ApiResponse.success(reviewService.update(principal.userId(), shopId, reviewId, request));
+		return ApiResponse.success(reviewService.update(principal.userId(), googlePlaceId, reviewId, request));
 	}
 
 	@DeleteMapping("/{reviewId}")
 	@Operation(summary = "내 미용샵 리뷰 삭제")
 	public ApiResponse<Void> delete(
 		@AuthenticationPrincipal CustomUserPrincipal principal,
-		@PathVariable Long shopId,
+		@PathVariable String googlePlaceId,
 		@PathVariable Long reviewId
 	) {
-		reviewService.delete(principal.userId(), shopId, reviewId);
+		reviewService.delete(principal.userId(), googlePlaceId, reviewId);
 		return ApiResponse.success();
 	}
 }

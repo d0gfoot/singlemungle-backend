@@ -27,8 +27,8 @@ public class Review {
 	@Column(name = "user_id", nullable = false)
 	private Long userId;
 
-	@Column(name = "place_id", nullable = false)
-	private Long placeId;
+	@Column(name = "google_place_id", nullable = false, length = 255)
+	private String googlePlaceId;
 
 	@Column(nullable = false)
 	private int rating;
@@ -51,9 +51,9 @@ public class Review {
 	protected Review() {
 	}
 
-	public Review(Long userId, Long placeId, int rating, String content, String groomingStyleName) {
+	public Review(Long userId, String googlePlaceId, int rating, String content, String groomingStyleName) {
 		this.userId = userId;
-		this.placeId = placeId;
+		this.googlePlaceId = googlePlaceId;
 		this.rating = rating;
 		this.content = content;
 		this.groomingStyleName = groomingStyleName;
