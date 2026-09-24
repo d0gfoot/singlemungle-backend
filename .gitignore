@@ -59,9 +59,6 @@ src/main/resources/application-secret.properties
 ### Local scripts ###
 scripts/
 
-### Local planning docs ###
-docs/ai-style-simulation.md
-
 ### Demo image binaries ###
 demo/review-images/*
 !demo/review-images/README.md
