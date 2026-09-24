@@ -51,3 +51,18 @@ GET /api/v1/places/photos?photoName={photoName}&maxWidthPx=800
 6. 자체 리뷰 및 AI 시뮬레이션 요청에도 동일한 `googlePlaceId`를 사용합니다.
 
 Google Places 장애 시 `PLACE_PROVIDER_UNAVAILABLE`, 시간 초과 시 `PLACE_PROVIDER_TIMEOUT`, 호출 한도 초과 시 `PLACE_PROVIDER_RATE_LIMITED`가 반환됩니다.
+
+## 즐겨찾기
+
+모든 즐겨찾기 API에는 `Authorization: Bearer {accessToken}`이 필요합니다.
+
+```http
+POST   /api/v1/users/me/favorite-places
+GET    /api/v1/users/me/favorite-places?page=0&size=20
+PATCH  /api/v1/users/me/favorite-places/{favoritePlaceId}
+DELETE /api/v1/users/me/favorite-places/{favoritePlaceId}
+```
+
+등록 요청은 `googlePlaceId`와 선택값 `memo`(최대 500자)를 받습니다. 같은 사용자가 같은 장소를 중복 등록하면 `FAVORITE_PLACE_ALREADY_EXISTS`, 본인 소유가 아닌 즐겨찾기에 접근하면 `FAVORITE_PLACE_NOT_FOUND`를 반환합니다.
+
+목록 응답은 `favoritePlaceId`, `googlePlaceId`, `memo`, `createdAt`을 제공합니다. Google 장소의 이름과 사진 등 최신 정보가 필요하면 `googlePlaceId`로 장소 상세 API를 호출합니다.

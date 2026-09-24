@@ -11,12 +11,10 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "favorite_places")
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FavoritePlace {
 
@@ -24,7 +22,7 @@ public class FavoritePlace {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
 	@Column(name = "google_place_id", nullable = false, length = 255)
@@ -33,7 +31,7 @@ public class FavoritePlace {
     @Column(columnDefinition = "TEXT")
     private String memo;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
 	public FavoritePlace(Long userId, String googlePlaceId, String memo) {
@@ -41,4 +39,8 @@ public class FavoritePlace {
 		this.googlePlaceId = googlePlaceId;
         this.memo = memo;
     }
+
+	public void updateMemo(String memo) {
+		this.memo = memo;
+	}
 }
