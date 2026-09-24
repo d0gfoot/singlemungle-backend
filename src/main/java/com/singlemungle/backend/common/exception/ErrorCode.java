@@ -5,6 +5,11 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
 	INVALID_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "잘못된 요청"),
+	API_NOT_FOUND(HttpStatus.NOT_FOUND, "API_NOT_FOUND", "요청한 API를 찾을 수 없습니다"),
+	METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 메서드입니다"),
+	UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 Content-Type입니다"),
+	PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "PAYLOAD_TOO_LARGE", "요청 데이터 크기가 허용 범위를 초과했습니다"),
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "접근 권한이 없습니다"),
 	PLACE_NOT_FOUND(HttpStatus.NOT_FOUND, "PLACE_NOT_FOUND", "장소를 찾을 수 없습니다"),
 	FAVORITE_PLACE_NOT_FOUND(HttpStatus.NOT_FOUND, "FAVORITE_PLACE_NOT_FOUND", "즐겨찾기를 찾을 수 없습니다"),
 	FAVORITE_PLACE_ALREADY_EXISTS(HttpStatus.CONFLICT, "FAVORITE_PLACE_ALREADY_EXISTS", "이미 즐겨찾기에 등록된 장소입니다"),

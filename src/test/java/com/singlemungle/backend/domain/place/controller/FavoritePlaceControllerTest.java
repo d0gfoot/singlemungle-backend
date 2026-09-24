@@ -110,7 +110,8 @@ class FavoritePlaceControllerTest {
 	@Test
 	void favoritePlaceRequiresAuthentication() throws Exception {
 		mockMvc.perform(get("/api/v1/users/me/favorite-places"))
-			.andExpect(status().isForbidden());
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("INVALID_TOKEN"));
 	}
 
 	private String bearerToken(Long userId) {
