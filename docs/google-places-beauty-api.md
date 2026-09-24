@@ -2,6 +2,8 @@
 
 Places API (New)를 이용해 애견 미용샵만 실시간 조회합니다. Google 장소 데이터는 DB에 복제하지 않으며, 자체 리뷰와 AI 시뮬레이션에는 문자열 `googlePlaceId`만 저장합니다.
 
+`V13__drop_legacy_place_tables.sql` 적용 후 기존 카카오 장소용 `places`, `place_*`, `beauty_styles` 테이블과 숫자 장소 ID 컬럼은 제거됩니다.
+
 ## 환경 설정
 
 ```properties
