@@ -52,14 +52,24 @@ class PlaceControllerTest {
 	}
 
 	@Test
-	void searchBeautyShopsByName() throws Exception {
+	void searchBeautyShopsByNameNationwideByDefault() throws Exception {
+		mockMvc.perform(get("/api/v1/places/search")
+				.param("query", "멍살롱"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("SUCCESS"))
+			.andExpect(jsonPath("$.data.places[0].googlePlaceId").value(FakeGooglePlacesClient.PLACE_ID))
+			.andExpect(jsonPath("$.data.places[0].distanceMeters").doesNotExist());
+	}
+
+	@Test
+	void searchBeautyShopsByNameNearCurrentLocation() throws Exception {
 		mockMvc.perform(get("/api/v1/places/search")
 				.param("query", "멍살롱")
+				.param("scope", "NEARBY")
 				.param("latitude", "37.5000530744517")
 				.param("longitude", "126.86799268384159"))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").value("SUCCESS"))
-			.andExpect(jsonPath("$.data.places[0].googlePlaceId").value(FakeGooglePlacesClient.PLACE_ID));
+			.andExpect(jsonPath("$.data.places[0].distanceMeters").value(greaterThanOrEqualTo(0)));
 	}
 
 	@Test

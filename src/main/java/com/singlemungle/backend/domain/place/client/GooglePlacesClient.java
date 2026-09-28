@@ -14,6 +14,12 @@ public interface GooglePlacesClient {
 
 	GooglePlaceSearchResult searchBeautyShopsByName(
 		String query,
+		int pageSize,
+		String pageToken
+	);
+
+	GooglePlaceSearchResult searchNearbyBeautyShopsByName(
+		String query,
 		BigDecimal latitude,
 		BigDecimal longitude,
 		int radiusMeters,

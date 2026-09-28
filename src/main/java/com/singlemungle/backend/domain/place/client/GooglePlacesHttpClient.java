@@ -93,6 +93,15 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 	@Override
 	public GooglePlaceSearchResult searchBeautyShopsByName(
 		String query,
+		int pageSize,
+		String pageToken
+	) {
+		return searchBeautyShops(query, null, null, null, pageSize, pageToken);
+	}
+
+	@Override
+	public GooglePlaceSearchResult searchNearbyBeautyShopsByName(
+		String query,
 		BigDecimal latitude,
 		BigDecimal longitude,
 		int radiusMeters,
@@ -106,7 +115,7 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		String textQuery,
 		BigDecimal latitude,
 		BigDecimal longitude,
-		int radiusMeters,
+		Integer radiusMeters,
 		int pageSize,
 		String pageToken
 	) {
@@ -184,7 +193,7 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		String textQuery,
 		BigDecimal latitude,
 		BigDecimal longitude,
-		int radiusMeters,
+		Integer radiusMeters,
 		int pageSize,
 		String pageToken
 	) {
@@ -194,12 +203,14 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		body.put("languageCode", properties.getLanguageCode());
 		body.put("regionCode", properties.getRegionCode());
 		body.put("pageSize", pageSize);
-		body.put("rankPreference", "DISTANCE");
+		body.put("rankPreference", latitude == null ? "RELEVANCE" : "DISTANCE");
 		body.put("includePureServiceAreaBusinesses", false);
-		body.put("locationBias", Map.of("circle", Map.of(
-			"center", Map.of("latitude", latitude, "longitude", longitude),
-			"radius", radiusMeters
-		)));
+		if (latitude != null && longitude != null && radiusMeters != null) {
+			body.put("locationBias", Map.of("circle", Map.of(
+				"center", Map.of("latitude", latitude, "longitude", longitude),
+				"radius", radiusMeters
+			)));
+		}
 		if (pageToken != null && !pageToken.isBlank()) {
 			body.put("pageToken", pageToken);
 		}

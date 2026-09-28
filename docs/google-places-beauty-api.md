@@ -68,10 +68,18 @@ Google Places 장애 시 `PLACE_PROVIDER_UNAVAILABLE`, 시간 초과 시 `PLACE_
 ## 이름 검색
 
 ```http
-GET /api/v1/places/search?query=멍살롱&latitude=37.5000530744517&longitude=126.86799268384159&radiusMeters=10000&limit=20
+GET /api/v1/places/search?query=멍살롱
 ```
 
-`query`는 필수이며 최대 100자입니다. 좌표와 반경을 생략하면 시연 기본값을 사용합니다. 주변 조회와 동일하게 교육기관을 제외하며, 결과의 `googlePlaceId`로 상세 API를 호출합니다. `nextPageToken`이 있으면 같은 검색 조건과 함께 다음 요청에 전달합니다.
+`query`는 필수이며 최대 100자입니다. 기본 `scope=NATIONWIDE`는 위치 편향 없이 전국 관련성 순으로 검색하며 `distanceMeters`는 `null`입니다. 전국 모든 업체를 수집하는 API가 아니라 Google이 검색어와 관련성이 높다고 판단한 제한된 결과를 반환합니다.
+
+내 주변 이름 검색은 다음과 같이 요청합니다.
+
+```http
+GET /api/v1/places/search?query=멍살롱&scope=NEARBY&latitude=37.5000530744517&longitude=126.86799268384159&radiusMeters=10000&limit=20
+```
+
+`scope=NEARBY`에서 좌표와 반경을 생략하면 시연 기본값을 사용하며, 거리순으로 반환합니다. 두 범위 모두 교육기관을 제외하고 결과의 `googlePlaceId`로 상세 API를 호출합니다. `nextPageToken`이 있으면 같은 검색 조건과 함께 다음 요청에 전달합니다.
 
 ## 즐겨찾기
 

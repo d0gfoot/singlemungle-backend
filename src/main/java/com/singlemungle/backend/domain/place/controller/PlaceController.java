@@ -6,6 +6,7 @@ import com.singlemungle.backend.common.response.ApiResponse;
 import com.singlemungle.backend.domain.place.dto.NearbyPlacesResponse;
 import com.singlemungle.backend.domain.place.dto.PlaceDetailResponse;
 import com.singlemungle.backend.domain.place.dto.PlacePhotoUriResponse;
+import com.singlemungle.backend.domain.place.dto.PlaceSearchScope;
 import com.singlemungle.backend.domain.place.service.PlaceQueryService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,9 +51,10 @@ public class PlaceController {
 	}
 
 	@GetMapping("/search")
-	@Operation(summary = "애견 미용샵 이름 검색", description = "상호명 검색어와 위치를 기준으로 최대 10km 내 애견 미용샵을 조회합니다.")
+	@Operation(summary = "애견 미용샵 이름 검색", description = "기본적으로 전국 관련성 검색을 수행하며, NEARBY 범위에서는 위치 기준 최대 10km 내 결과를 조회합니다.")
 	public ApiResponse<NearbyPlacesResponse> searchBeautyShopsByName(
 		@RequestParam @NotBlank @Size(max = 100) String query,
+		@RequestParam(defaultValue = "NATIONWIDE") PlaceSearchScope scope,
 		@RequestParam(required = false) @DecimalMin("-90.0") @DecimalMax("90.0") BigDecimal latitude,
 		@RequestParam(required = false) @DecimalMin("-180.0") @DecimalMax("180.0") BigDecimal longitude,
 		@RequestParam(required = false) @Min(1) @Max(10000) Integer radiusMeters,
@@ -61,7 +63,7 @@ public class PlaceController {
 	) {
 		return ApiResponse.success(
 			placeQueryService.searchBeautyShopsByName(
-				query, latitude, longitude, radiusMeters, limit, pageToken
+				query, scope, latitude, longitude, radiusMeters, limit, pageToken
 			)
 		);
 	}

@@ -11,7 +11,8 @@ public record NearbyPlaceItemResponse(
 	String formattedAddress,
 	BigDecimal latitude,
 	BigDecimal longitude,
-	long distanceMeters,
+	@Schema(description = "검색 기준점과의 거리. 전국 검색에서는 null", example = "320")
+	Long distanceMeters,
 	String googleMapsUri
 ) {
 }

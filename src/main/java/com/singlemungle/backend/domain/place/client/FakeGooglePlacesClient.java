@@ -33,6 +33,17 @@ public class FakeGooglePlacesClient implements GooglePlacesClient {
 	@Override
 	public GooglePlaceSearchResult searchBeautyShopsByName(
 		String query,
+		int pageSize,
+		String pageToken
+	) {
+		return searchBeautyShops(
+			new BigDecimal("37.5000531"), new BigDecimal("126.8679927"), 10000, pageSize, pageToken
+		);
+	}
+
+	@Override
+	public GooglePlaceSearchResult searchNearbyBeautyShopsByName(
+		String query,
 		BigDecimal latitude,
 		BigDecimal longitude,
 		int radiusMeters,
