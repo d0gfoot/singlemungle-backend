@@ -17,6 +17,7 @@ public record GooglePlaceDetail(
 	Integer userRatingCount,
 	List<String> types,
 	List<String> weekdayDescriptions,
-	List<GooglePlacePhoto> photos
+	List<GooglePlacePhoto> photos,
+	List<GooglePlaceReview> reviews
 ) {
 }

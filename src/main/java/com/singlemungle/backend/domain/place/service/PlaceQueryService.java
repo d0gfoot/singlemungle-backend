@@ -12,6 +12,8 @@ import com.singlemungle.backend.domain.place.client.GooglePlaceDetail;
 import com.singlemungle.backend.domain.place.client.GooglePlaceSearchResult;
 import com.singlemungle.backend.domain.place.client.GooglePlaceSummary;
 import com.singlemungle.backend.domain.place.client.GooglePlacesClient;
+import com.singlemungle.backend.domain.place.dto.GooglePlaceReviewAuthorResponse;
+import com.singlemungle.backend.domain.place.dto.GooglePlaceReviewResponse;
 import com.singlemungle.backend.domain.place.dto.NearbyPlaceItemResponse;
 import com.singlemungle.backend.domain.place.dto.NearbyPlacesResponse;
 import com.singlemungle.backend.domain.place.dto.PlaceDetailResponse;
@@ -52,6 +54,7 @@ public class PlaceQueryService {
 			searchLatitude, searchLongitude, searchRadius, resultLimit, pageToken
 		);
 		List<NearbyPlaceItemResponse> places = result.places().stream()
+			.filter(place -> beautyShopPlaceService.isBeautyShopCandidate(place.name()))
 			.filter(place -> place.latitude() != null && place.longitude() != null)
 			.map(place -> toNearbyResponse(place, searchLatitude, searchLongitude))
 			.filter(place -> place.distanceMeters() <= searchRadius)
@@ -69,6 +72,16 @@ public class PlaceQueryService {
 			detail.userRatingCount(), detail.weekdayDescriptions(),
 			detail.photos().stream()
 				.map(photo -> new PlacePhotoResponse(photo.name(), photo.authorAttributions()))
+				.toList(),
+			detail.reviews().stream()
+				.map(review -> new GooglePlaceReviewResponse(
+					review.name(), review.rating(), review.text(), review.originalText(),
+					review.relativePublishTimeDescription(), review.publishTime(),
+					new GooglePlaceReviewAuthorResponse(
+						review.author().displayName(), review.author().uri(), review.author().photoUri()
+					),
+					review.googleMapsUri(), review.flagContentUri()
+				))
 				.toList()
 		);
 	}

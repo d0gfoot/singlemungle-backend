@@ -62,7 +62,12 @@ class PlaceControllerTest {
 			.andExpect(jsonPath("$.data.rating").value(4.8))
 			.andExpect(jsonPath("$.data.userRatingCount").value(25))
 			.andExpect(jsonPath("$.data.photos[0].photoName")
-				.value("places/ChIJ-demo-beauty-shop/photos/demo-photo"));
+				.value("places/ChIJ-demo-beauty-shop/photos/demo-photo"))
+			.andExpect(jsonPath("$.data.googleReviews[0].rating").value(5.0))
+			.andExpect(jsonPath("$.data.googleReviews[0].text").value("친절하고 미용 결과가 만족스러웠어요."))
+			.andExpect(jsonPath("$.data.googleReviews[0].author.displayName").value("Google 리뷰 작성자"))
+			.andExpect(jsonPath("$.data.googleReviews[0].googleMapsUri")
+				.value("https://www.google.com/maps/reviews/demo"));
 	}
 
 	@Test
