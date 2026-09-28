@@ -19,6 +19,7 @@ import com.singlemungle.backend.domain.place.dto.NearbyPlacesResponse;
 import com.singlemungle.backend.domain.place.dto.PlaceDetailResponse;
 import com.singlemungle.backend.domain.place.dto.PlacePhotoResponse;
 import com.singlemungle.backend.domain.place.dto.PlacePhotoUriResponse;
+import com.singlemungle.backend.domain.place.dto.PlaceSearchScope;
 
 import lombok.RequiredArgsConstructor;
 
@@ -59,6 +60,7 @@ public class PlaceQueryService {
 
 	public NearbyPlacesResponse searchBeautyShopsByName(
 		String query,
+		PlaceSearchScope scope,
 		BigDecimal latitude,
 		BigDecimal longitude,
 		Integer radiusMeters,
@@ -66,13 +68,21 @@ public class PlaceQueryService {
 		String pageToken
 	) {
 		String normalizedQuery = normalizeSearchQuery(query);
+		int resultLimit = limit == null ? properties.getMaxResults() : limit;
+		validateResultLimit(resultLimit);
+		if (scope == PlaceSearchScope.NATIONWIDE) {
+			GooglePlaceSearchResult result = googlePlacesClient.searchBeautyShopsByName(
+				normalizedQuery, resultLimit, pageToken
+			);
+			return toNationwidePlacesResponse(result, resultLimit);
+		}
+
 		BigDecimal searchLatitude = latitude == null ? properties.getCenterLatitude() : latitude;
 		BigDecimal searchLongitude = longitude == null ? properties.getCenterLongitude() : longitude;
 		int searchRadius = radiusMeters == null ? properties.getDefaultRadiusMeters() : radiusMeters;
-		int resultLimit = limit == null ? properties.getMaxResults() : limit;
 		validateSearchOptions(searchRadius, resultLimit);
 
-		GooglePlaceSearchResult result = googlePlacesClient.searchBeautyShopsByName(
+		GooglePlaceSearchResult result = googlePlacesClient.searchNearbyBeautyShopsByName(
 			normalizedQuery, searchLatitude, searchLongitude, searchRadius, resultLimit, pageToken
 		);
 		return toNearbyPlacesResponse(result, searchLatitude, searchLongitude, searchRadius, resultLimit);
@@ -91,6 +101,18 @@ public class PlaceQueryService {
 			.map(place -> toNearbyResponse(place, searchLatitude, searchLongitude))
 			.filter(place -> place.distanceMeters() <= searchRadius)
 			.sorted(Comparator.comparingLong(NearbyPlaceItemResponse::distanceMeters))
+			.limit(resultLimit)
+			.toList();
+		return new NearbyPlacesResponse(places, result.nextPageToken());
+	}
+
+	private NearbyPlacesResponse toNationwidePlacesResponse(GooglePlaceSearchResult result, int resultLimit) {
+		List<NearbyPlaceItemResponse> places = result.places().stream()
+			.filter(place -> beautyShopPlaceService.isBeautyShopCandidate(place.name()))
+			.map(place -> new NearbyPlaceItemResponse(
+				place.googlePlaceId(), place.name(), place.formattedAddress(), place.latitude(), place.longitude(),
+				null, place.googleMapsUri()
+			))
 			.limit(resultLimit)
 			.toList();
 		return new NearbyPlacesResponse(places, result.nextPageToken());
@@ -134,8 +156,14 @@ public class PlaceQueryService {
 	}
 
 	private void validateSearchOptions(int radiusMeters, int limit) {
-		if (radiusMeters < 1 || radiusMeters > properties.getMaxRadiusMeters()
-			|| limit < 1 || limit > properties.getMaxResults()) {
+		if (radiusMeters < 1 || radiusMeters > properties.getMaxRadiusMeters()) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST);
+		}
+		validateResultLimit(limit);
+	}
+
+	private void validateResultLimit(int limit) {
+		if (limit < 1 || limit > properties.getMaxResults()) {
 			throw new BusinessException(ErrorCode.INVALID_REQUEST);
 		}
 	}
