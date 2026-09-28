@@ -16,6 +16,7 @@ public record PlaceDetailResponse(
 	BigDecimal rating,
 	Integer userRatingCount,
 	List<String> weekdayDescriptions,
-	List<PlacePhotoResponse> photos
+	List<PlacePhotoResponse> photos,
+	List<GooglePlaceReviewResponse> googleReviews
 ) {
 }

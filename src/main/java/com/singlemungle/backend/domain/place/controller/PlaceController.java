@@ -48,7 +48,10 @@ public class PlaceController {
 	}
 
 	@GetMapping("/{googlePlaceId}")
-	@Operation(summary = "애견 미용샵 상세 조회", description = "Google Place ID로 최신 장소 상세 정보를 조회합니다.")
+	@Operation(
+		summary = "애견 미용샵 상세 조회",
+		description = "Google Place ID로 최신 장소 정보와 표시 전용 Google 리뷰를 조회합니다. Google 리뷰는 관련성 순이며 자체 리뷰와 별개입니다."
+	)
 	public ApiResponse<PlaceDetailResponse> findPlaceDetail(
 		@Parameter(description = "Google Place ID") @PathVariable String googlePlaceId
 	) {

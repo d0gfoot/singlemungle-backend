@@ -57,7 +57,7 @@ class BeautyShopPlaceServiceTest {
 	private GooglePlaceDetail place(String name, List<String> types) {
 		return new GooglePlaceDetail(
 			"place-id", name, "서울", BigDecimal.ONE, BigDecimal.ONE,
-			null, null, null, null, null, null, types, List.of(), List.of()
+			null, null, null, null, null, null, types, List.of(), List.of(), List.of()
 		);
 	}
 }

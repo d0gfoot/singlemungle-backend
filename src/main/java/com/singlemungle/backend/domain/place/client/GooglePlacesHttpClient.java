@@ -51,7 +51,16 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		"userRatingCount",
 		"types",
 		"photos.name",
-		"photos.authorAttributions"
+		"photos.authorAttributions",
+		"reviews.name",
+		"reviews.rating",
+		"reviews.text",
+		"reviews.originalText",
+		"reviews.relativePublishTimeDescription",
+		"reviews.publishTime",
+		"reviews.authorAttribution",
+		"reviews.googleMapsUri",
+		"reviews.flagContentUri"
 	);
 
 	private final GooglePlacesProperties properties;
@@ -185,7 +194,7 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		);
 	}
 
-	private GooglePlaceDetail toDetail(Map<String, Object> place) {
+	GooglePlaceDetail toDetail(Map<String, Object> place) {
 		Map<String, Object> location = asMap(place.get("location"));
 		Map<String, Object> currentHours = asMap(place.get("currentOpeningHours"));
 		Map<String, Object> regularHours = asMap(place.get("regularOpeningHours"));
@@ -203,8 +212,33 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 			asInteger(place.get("userRatingCount")),
 			asList(place.get("types")).stream().map(this::asString).toList(),
 			asList(regularHours.get("weekdayDescriptions")).stream().map(this::asString).toList(),
-			photos(place.get("photos"))
+			photos(place.get("photos")),
+			reviews(place.get("reviews"))
 		);
+	}
+
+	private List<GooglePlaceReview> reviews(Object value) {
+		List<GooglePlaceReview> reviews = new ArrayList<>();
+		for (Object reviewValue : asList(value)) {
+			Map<String, Object> review = asMap(reviewValue);
+			Map<String, Object> author = asMap(review.get("authorAttribution"));
+			reviews.add(new GooglePlaceReview(
+				asString(review.get("name")),
+				asBigDecimal(review.get("rating")),
+				localizedText(review.get("text")),
+				localizedText(review.get("originalText")),
+				asString(review.get("relativePublishTimeDescription")),
+				asString(review.get("publishTime")),
+				new GooglePlaceReviewAuthor(
+					asString(author.get("displayName")),
+					asString(author.get("uri")),
+					asString(author.get("photoUri"))
+				),
+				asString(review.get("googleMapsUri")),
+				asString(review.get("flagContentUri"))
+			));
+		}
+		return reviews;
 	}
 
 	private List<GooglePlacePhoto> photos(Object value) {
@@ -234,6 +268,10 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 
 	private String displayName(Map<String, Object> place) {
 		return asString(asMap(place.get("displayName")).get("text"));
+	}
+
+	private String localizedText(Object value) {
+		return asString(asMap(value).get("text"));
 	}
 
 	private Object value(Map<String, Object> map, String key) {
