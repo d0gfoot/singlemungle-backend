@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 public class PlaceQueryService {
 
 	private static final double EARTH_RADIUS_METERS = 6_371_000;
+	private static final int MAX_SEARCH_QUERY_LENGTH = 100;
 	private static final Pattern PHOTO_NAME_PATTERN = Pattern.compile(
 		"^places/[A-Za-z0-9_-]+/photos/[A-Za-z0-9_-]+$"
 	);
@@ -53,6 +54,37 @@ public class PlaceQueryService {
 		GooglePlaceSearchResult result = googlePlacesClient.searchBeautyShops(
 			searchLatitude, searchLongitude, searchRadius, resultLimit, pageToken
 		);
+		return toNearbyPlacesResponse(result, searchLatitude, searchLongitude, searchRadius, resultLimit);
+	}
+
+	public NearbyPlacesResponse searchBeautyShopsByName(
+		String query,
+		BigDecimal latitude,
+		BigDecimal longitude,
+		Integer radiusMeters,
+		Integer limit,
+		String pageToken
+	) {
+		String normalizedQuery = normalizeSearchQuery(query);
+		BigDecimal searchLatitude = latitude == null ? properties.getCenterLatitude() : latitude;
+		BigDecimal searchLongitude = longitude == null ? properties.getCenterLongitude() : longitude;
+		int searchRadius = radiusMeters == null ? properties.getDefaultRadiusMeters() : radiusMeters;
+		int resultLimit = limit == null ? properties.getMaxResults() : limit;
+		validateSearchOptions(searchRadius, resultLimit);
+
+		GooglePlaceSearchResult result = googlePlacesClient.searchBeautyShopsByName(
+			normalizedQuery, searchLatitude, searchLongitude, searchRadius, resultLimit, pageToken
+		);
+		return toNearbyPlacesResponse(result, searchLatitude, searchLongitude, searchRadius, resultLimit);
+	}
+
+	private NearbyPlacesResponse toNearbyPlacesResponse(
+		GooglePlaceSearchResult result,
+		BigDecimal searchLatitude,
+		BigDecimal searchLongitude,
+		int searchRadius,
+		int resultLimit
+	) {
 		List<NearbyPlaceItemResponse> places = result.places().stream()
 			.filter(place -> beautyShopPlaceService.isBeautyShopCandidate(place.name()))
 			.filter(place -> place.latitude() != null && place.longitude() != null)
@@ -62,6 +94,13 @@ public class PlaceQueryService {
 			.limit(resultLimit)
 			.toList();
 		return new NearbyPlacesResponse(places, result.nextPageToken());
+	}
+
+	private String normalizeSearchQuery(String query) {
+		if (query == null || query.isBlank() || query.length() > MAX_SEARCH_QUERY_LENGTH) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST);
+		}
+		return query.trim();
 	}
 
 	public PlaceDetailResponse findPlaceDetail(String googlePlaceId) {

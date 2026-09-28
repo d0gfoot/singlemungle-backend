@@ -52,6 +52,24 @@ class PlaceControllerTest {
 	}
 
 	@Test
+	void searchBeautyShopsByName() throws Exception {
+		mockMvc.perform(get("/api/v1/places/search")
+				.param("query", "멍살롱")
+				.param("latitude", "37.5000530744517")
+				.param("longitude", "126.86799268384159"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("SUCCESS"))
+			.andExpect(jsonPath("$.data.places[0].googlePlaceId").value(FakeGooglePlacesClient.PLACE_ID));
+	}
+
+	@Test
+	void searchBeautyShopsRejectsBlankQuery() throws Exception {
+		mockMvc.perform(get("/api/v1/places/search").param("query", " "))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+	}
+
+	@Test
 	void findPlaceDetailReturnsGooglePlaceData() throws Exception {
 		mockMvc.perform(get("/api/v1/places/{googlePlaceId}", FakeGooglePlacesClient.PLACE_ID))
 			.andExpect(status().isOk())
