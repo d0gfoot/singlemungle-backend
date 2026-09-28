@@ -25,6 +25,8 @@ GET /api/v1/places/nearby?latitude=37.5000530744517&longitude=126.86799268384159
 
 좌표와 반경을 생략하면 시연 기본값을 사용합니다. 응답의 `googlePlaceId`를 상세 조회, 자체 리뷰, 즐겨찾기, AI 시뮬레이션에 그대로 전달합니다. `nextPageToken`이 있으면 다음 요청의 `pageToken`으로 전달합니다.
 
+상세 조회와 연계 기능은 Google Places의 `pet_care` 타입을 검증합니다. 상호명은 업체마다 표현이 다양하므로 이름 키워드로 미용샵 여부를 다시 제한하지 않습니다. 프론트는 주변 애견 미용샵 조회 응답에서 받은 `googlePlaceId`를 사용해야 합니다.
+
 ## 상세 조회
 
 ```http
