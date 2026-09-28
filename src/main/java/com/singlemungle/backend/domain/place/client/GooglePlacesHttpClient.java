@@ -87,12 +87,35 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		int pageSize,
 		String pageToken
 	) {
+		return searchBeautyShops(properties.getBeautySearchQuery(), latitude, longitude, radiusMeters, pageSize, pageToken);
+	}
+
+	@Override
+	public GooglePlaceSearchResult searchBeautyShopsByName(
+		String query,
+		BigDecimal latitude,
+		BigDecimal longitude,
+		int radiusMeters,
+		int pageSize,
+		String pageToken
+	) {
+		return searchBeautyShops(query, latitude, longitude, radiusMeters, pageSize, pageToken);
+	}
+
+	private GooglePlaceSearchResult searchBeautyShops(
+		String textQuery,
+		BigDecimal latitude,
+		BigDecimal longitude,
+		int radiusMeters,
+		int pageSize,
+		String pageToken
+	) {
 		try {
 			Map<String, Object> response = restClient.post()
 				.uri("/places:searchText")
 				.header(HttpHeaders.CONTENT_TYPE, "application/json")
 				.header("X-Goog-FieldMask", SEARCH_FIELD_MASK)
-				.body(searchRequest(latitude, longitude, radiusMeters, pageSize, pageToken))
+				.body(searchRequest(textQuery, latitude, longitude, radiusMeters, pageSize, pageToken))
 				.retrieve()
 				.body(new ParameterizedTypeReference<>() {
 				});
@@ -158,6 +181,7 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 	}
 
 	private Map<String, Object> searchRequest(
+		String textQuery,
 		BigDecimal latitude,
 		BigDecimal longitude,
 		int radiusMeters,
@@ -165,7 +189,7 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		String pageToken
 	) {
 		Map<String, Object> body = new LinkedHashMap<>();
-		body.put("textQuery", properties.getBeautySearchQuery());
+		body.put("textQuery", textQuery);
 		body.put("includedType", "pet_care");
 		body.put("languageCode", properties.getLanguageCode());
 		body.put("regionCode", properties.getRegionCode());

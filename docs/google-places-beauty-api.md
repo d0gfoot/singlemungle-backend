@@ -65,6 +65,14 @@ GET /api/v1/places/photos?photoName={photoName}&maxWidthPx=800
 
 Google Places 장애 시 `PLACE_PROVIDER_UNAVAILABLE`, 시간 초과 시 `PLACE_PROVIDER_TIMEOUT`, 호출 한도 초과 시 `PLACE_PROVIDER_RATE_LIMITED`가 반환됩니다.
 
+## 이름 검색
+
+```http
+GET /api/v1/places/search?query=멍살롱&latitude=37.5000530744517&longitude=126.86799268384159&radiusMeters=10000&limit=20
+```
+
+`query`는 필수이며 최대 100자입니다. 좌표와 반경을 생략하면 시연 기본값을 사용합니다. 주변 조회와 동일하게 교육기관을 제외하며, 결과의 `googlePlaceId`로 상세 API를 호출합니다. `nextPageToken`이 있으면 같은 검색 조건과 함께 다음 요청에 전달합니다.
+
 ## 즐겨찾기
 
 모든 즐겨찾기 API에는 `Authorization: Bearer {accessToken}`이 필요합니다.
