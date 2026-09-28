@@ -134,7 +134,9 @@ POST /api/v1/auth/oauth/login
 Authorization: Bearer {accessToken}
 ```
 
-Swagger UI에서 보호 API를 테스트할 때는 우측 상단 `Authorize`에 access token을 입력한 뒤 실행합니다. access token 없이 `POST /api/v1/pets` 같은 보호 API를 호출하면 `403`으로 차단되고 DB에 저장되지 않습니다.
+Swagger UI에서 보호 API를 테스트할 때는 우측 상단 `Authorize`에 access token을 입력한 뒤 실행합니다. access token 없이 `POST /api/v1/pets` 같은 보호 API를 호출하면 `401` 공통 오류 응답이 반환되고 DB에 저장되지 않습니다.
+
+일반 JSON API의 성공과 실패 응답은 모두 `code`, `message`, `data` 구조를 사용합니다. 인증 실패는 `401`, 권한 부족은 `403`, 잘못된 요청은 `400`, 없는 API는 `404`, 지원하지 않는 메서드는 `405`, 지원하지 않는 Content-Type은 `415`, 업로드 크기 초과는 `413`으로 구분합니다. 이미지 파일 조회 성공 응답은 바이너리이므로 공통 JSON으로 감싸지 않습니다.
 
 ## 주요 API Path
 
@@ -147,21 +149,13 @@ Swagger UI에서 보호 API를 테스트할 때는 우측 상단 `Authorize`에 
 
 인증이 필요한 API는 `Authorization: Bearer {accessToken}` 헤더를 사용합니다.
 
-## 장소 데이터 수집
+## 애견 미용샵 조회
 
-Kakao Local API를 사용해 장소 데이터를 DB에 저장할 수 있습니다.
+장소 정보는 Google Places API (New)에서 실시간 조회하며 동물병원은 검색 대상에 포함하지 않습니다.
+기본 시연 위치는 위도 `37.5000530744517`, 경도 `126.86799268384159`, 반경 `10km`입니다.
+리뷰, 즐겨찾기, AI 시뮬레이션은 내부 숫자 ID 대신 Google Place ID를 연결 키로 사용합니다.
 
-```bash
-python3 scripts/import_kakao_places.py
-```
-
-SQL만 확인하려면:
-
-```bash
-python3 scripts/import_kakao_places.py --dry-run
-```
-
-중복 장소는 `(provider, external_place_id)` 기준으로 갱신합니다.
+로컬 실행 전 `.env`에 `GOOGLE_PLACES_API_KEY`를 설정하고 `GOOGLE_PLACES_ENABLED=true`로 활성화합니다.
 
 ## 협업
 

@@ -32,11 +32,11 @@ Authorization: Bearer {accessToken}
 ## 자체 리뷰
 
 ```http
-POST   /api/v1/beauty-shops/{shopId}/reviews
-GET    /api/v1/beauty-shops/{shopId}/reviews?page=0&size=20
-GET    /api/v1/beauty-shops/{shopId}/reviews/{reviewId}
-PATCH  /api/v1/beauty-shops/{shopId}/reviews/{reviewId}
-DELETE /api/v1/beauty-shops/{shopId}/reviews/{reviewId}
+POST   /api/v1/beauty-shops/{googlePlaceId}/reviews
+GET    /api/v1/beauty-shops/{googlePlaceId}/reviews?page=0&size=20
+GET    /api/v1/beauty-shops/{googlePlaceId}/reviews/{reviewId}
+PATCH  /api/v1/beauty-shops/{googlePlaceId}/reviews/{reviewId}
+DELETE /api/v1/beauty-shops/{googlePlaceId}/reviews/{reviewId}
 ```
 
 작성은 multipart이며 `rating`(1~5), `content`(최대 2,000자), 선택값 `groomingStyleName`, `aiReferenceAllowed`, `images`(최대 5개)를 받습니다. 수정 body는 `rating`, `content`, `groomingStyleName`, `aiReferenceAllowed`입니다. 수정과 삭제는 작성자만 가능합니다.
@@ -52,7 +52,7 @@ Authorization: Bearer {accessToken}
 | 필드 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
 | `petId` | number | Y | 현재 사용자가 소유한 반려동물 |
-| `shopId` | number | N | 리뷰 이미지 선택 시 리뷰의 미용샵으로 자동 결정 가능 |
+| `googlePlaceId` | string | N | Google Places의 장소 ID. 리뷰 이미지 선택 시 리뷰의 미용샵으로 자동 결정 가능 |
 | `stylePresetId` | number | N | 공통 스타일 프리셋 ID |
 | `referenceReviewImageId` | number | N | AI 참고 동의된 자체 리뷰 이미지 ID |
 | `additionalRequest` | string | N | 최대 500자 |
@@ -68,7 +68,7 @@ Authorization: Bearer {accessToken}
   "data": {
     "simulationId": 42,
     "petId": 7,
-    "shopId": 3,
+    "googlePlaceId": "ChIJ...",
     "styleKeyword": "물개컷",
     "stylePresetId": 2,
     "referenceReviewImageId": 10,
@@ -90,7 +90,7 @@ Authorization: Bearer {accessToken}
 ```ts
 const form = new FormData();
 form.append('petId', String(petId));
-form.append('shopId', String(shopId));
+form.append('googlePlaceId', googlePlaceId);
 form.append('stylePresetId', String(stylePresetId));
 form.append('referenceReviewImageId', String(reviewImageId));
 form.append('additionalRequest', additionalRequest.trim());

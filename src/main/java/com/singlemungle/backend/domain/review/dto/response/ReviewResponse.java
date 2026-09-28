@@ -8,7 +8,7 @@ import com.singlemungle.backend.domain.review.entity.Review;
 public record ReviewResponse(
 	Long reviewId,
 	Long userId,
-	Long shopId,
+	String googlePlaceId,
 	int rating,
 	String content,
 	String groomingStyleName,
@@ -21,7 +21,7 @@ public record ReviewResponse(
 		return new ReviewResponse(
 			review.getId(),
 			review.getUserId(),
-			review.getPlaceId(),
+			review.getGooglePlaceId(),
 			review.getRating(),
 			review.getContent(),
 			review.getGroomingStyleName(),

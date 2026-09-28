@@ -180,14 +180,14 @@ public class AuthController {
 			)
 		),
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(
-			responseCode = "403",
+			responseCode = "401",
 			description = "Authorization 헤더 없음 또는 유효하지 않은 access token",
 			content = @Content(
 				mediaType = "application/json",
 				examples = @ExampleObject(value = """
 					{
-					  "code": "FORBIDDEN",
-					  "message": "접근이 거부되었습니다",
+					  "code": "INVALID_TOKEN",
+					  "message": "유효하지 않은 인증 토큰입니다",
 					  "data": null
 					}
 					""")

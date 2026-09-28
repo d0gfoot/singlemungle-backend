@@ -72,7 +72,9 @@ class AuthControllerTest {
 	@Test
 	void logoutRequiresAccessToken() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/logout"))
-			.andExpect(status().isForbidden());
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("INVALID_TOKEN"))
+			.andExpect(jsonPath("$.data").doesNotExist());
 	}
 
 	@Test

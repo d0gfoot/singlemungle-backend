@@ -10,9 +10,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-	Page<Review> findByPlaceIdOrderByCreatedAtDesc(Long placeId, Pageable pageable);
+	Page<Review> findByGooglePlaceIdOrderByCreatedAtDesc(String googlePlaceId, Pageable pageable);
 
-	Optional<Review> findByIdAndPlaceId(Long id, Long placeId);
+	Optional<Review> findByIdAndGooglePlaceId(Long id, String googlePlaceId);
 
-	Optional<Review> findByIdAndPlaceIdAndUserId(Long id, Long placeId, Long userId);
+	Optional<Review> findByIdAndGooglePlaceIdAndUserId(Long id, String googlePlaceId, Long userId);
 }

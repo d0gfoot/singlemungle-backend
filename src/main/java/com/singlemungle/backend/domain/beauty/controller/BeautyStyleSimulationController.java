@@ -49,7 +49,7 @@ public class BeautyStyleSimulationController {
 		  "data": {
 		    "simulationId": 42,
 		    "petId": 7,
-		    "shopId": 3,
+		    "googlePlaceId": "ChIJ-demo-beauty-shop",
 		    "styleKeyword": "곰돌이컷",
 		    "stylePresetId": 1,
 		    "referenceReviewImageId": null,
@@ -73,7 +73,7 @@ public class BeautyStyleSimulationController {
 		  "data": {
 		    "simulationId": 42,
 		    "petId": 7,
-		    "shopId": 3,
+		    "googlePlaceId": "ChIJ-demo-beauty-shop",
 		    "styleKeyword": "곰돌이컷",
 		    "stylePresetId": 1,
 		    "referenceReviewImageId": null,
@@ -97,7 +97,7 @@ public class BeautyStyleSimulationController {
 		  "data": {
 		    "simulationId": 42,
 		    "petId": 7,
-		    "shopId": 3,
+		    "googlePlaceId": "ChIJ-demo-beauty-shop",
 		    "styleKeyword": "곰돌이컷",
 		    "stylePresetId": 1,
 		    "referenceReviewImageId": null,
@@ -136,8 +136,8 @@ public class BeautyStyleSimulationController {
 		@AuthenticationPrincipal CustomUserPrincipal principal,
 		@Parameter(description = "반려동물 ID", example = "101")
 		@RequestParam Long petId,
-		@Parameter(description = "미용샵 ID. 리뷰 이미지를 선택하면 생략할 수 있습니다.", example = "1")
-		@RequestParam(required = false) Long shopId,
+		@Parameter(description = "Google Place ID. 리뷰 이미지를 선택하면 생략할 수 있습니다.")
+		@RequestParam(required = false) String googlePlaceId,
 			@Parameter(description = "전역 미용 스타일 프리셋 ID", example = "1")
 			@RequestParam(required = false) Long stylePresetId,
 			@Parameter(description = "AI 참고 사용에 동의된 자체 리뷰 이미지 ID", example = "10")
@@ -158,7 +158,7 @@ public class BeautyStyleSimulationController {
 		return ApiResponse.success(simulationService.createSimulation(
 			principal.userId(),
 				petId,
-				shopId,
+				googlePlaceId,
 				stylePresetId,
 				referenceReviewImageId,
 				additionalRequest,

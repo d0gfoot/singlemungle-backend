@@ -2,18 +2,16 @@ package com.singlemungle.backend.domain.place.dto;
 
 import java.math.BigDecimal;
 
-import com.singlemungle.backend.domain.place.entity.PlaceType;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record NearbyPlaceItemResponse(
-	Long placeId,
-	String externalPlaceId,
-	PlaceType placeType,
+	@Schema(description = "Google Place ID", example = "ChIJN1t_tDeuEmsRUsoyG83frY4")
+	String googlePlaceId,
 	String name,
+	String formattedAddress,
 	BigDecimal latitude,
 	BigDecimal longitude,
 	long distanceMeters,
-	boolean isOpen,
-	BigDecimal ratingAverage,
-	int reviewCount
+	String googleMapsUri
 ) {
 }
