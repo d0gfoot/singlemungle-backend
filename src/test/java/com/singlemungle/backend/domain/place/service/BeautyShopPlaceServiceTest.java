@@ -20,22 +20,13 @@ class BeautyShopPlaceServiceTest {
 	private final BeautyShopPlaceService service = new BeautyShopPlaceService(googlePlacesClient);
 
 	@Test
-	void acceptsPetCareSalon() {
+	void acceptsPetCarePlaceWithoutKnownGroomingKeyword() {
 		when(googlePlacesClient.getPlaceDetail("place-id"))
-			.thenReturn(place("멍살롱", List.of("pet_care", "establishment")));
+			.thenReturn(place("그루밍솔루션 개봉점", List.of("pet_care", "establishment")));
 
 		GooglePlaceDetail result = service.getVerifiedBeautyShop(" place-id ");
 
-		assertThat(result.name()).isEqualTo("멍살롱");
-	}
-
-	@Test
-	void rejectsPetCafeWithoutGroomingKeyword() {
-		when(googlePlacesClient.getPlaceDetail("place-id"))
-			.thenReturn(place("강아지 놀이터", List.of("pet_care", "dog_cafe")));
-
-		assertThatThrownBy(() -> service.getVerifiedBeautyShop("place-id"))
-			.isInstanceOf(BusinessException.class);
+		assertThat(result.name()).isEqualTo("그루밍솔루션 개봉점");
 	}
 
 	@Test
