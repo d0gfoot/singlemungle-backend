@@ -52,6 +52,7 @@ public class PlaceQueryService {
 			searchLatitude, searchLongitude, searchRadius, resultLimit, pageToken
 		);
 		List<NearbyPlaceItemResponse> places = result.places().stream()
+			.filter(place -> beautyShopPlaceService.isBeautyShopCandidate(place.name()))
 			.filter(place -> place.latitude() != null && place.longitude() != null)
 			.map(place -> toNearbyResponse(place, searchLatitude, searchLongitude))
 			.filter(place -> place.distanceMeters() <= searchRadius)
