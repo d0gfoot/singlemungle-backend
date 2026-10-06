@@ -13,6 +13,9 @@ public record UserInfoResponse(
         @Schema(description = "전화번호", example = "010-1234-5678")
         String phone,
 
+        @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile/1.jpg")
+        String profileImageUrl,
+
         @Schema(description = "소셜 로그인 제공자", example = "KAKAO")
         String oauthProvider
 ) {

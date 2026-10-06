@@ -23,14 +23,17 @@ public class UserService {
     public UserInfoResponse getUserInfo(Long userId) {
         User u = findActiveUser(userId);
         String provider = (u.getOauthProvider() != null) ? u.getOauthProvider().name() : "NONE";
-        return new UserInfoResponse(u.getId(), u.getNickname(), u.getPhone(), provider);
+        return new UserInfoResponse(u.getId(), u.getNickname(), u.getPhone(), u.getProfileImageUrl(), provider);
     }
 
     @Transactional
-    public void updateUserInfo(Long userId, String nickname, String phone) {
+    public void updateUserInfo(Long userId, String nickname, String phone, String profileImageUrl) {
         User u = findActiveUser(userId);
         if (nickname != null) u.setNickname(nickname);
         if (phone != null) u.setPhone(phone);
+        if (profileImageUrl != null) {
+            u.setProfileImageUrl(profileImageUrl);
+        }
         u.setUpdatedAt(LocalDateTime.now());
     }
 
