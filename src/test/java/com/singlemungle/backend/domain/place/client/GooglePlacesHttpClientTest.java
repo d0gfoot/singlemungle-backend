@@ -59,4 +59,33 @@ class GooglePlacesHttpClientTest {
 
 		assertThat(detail.reviews()).isEmpty();
 	}
+
+	@Test
+	void parsesFirstSearchPhotoAsThumbnail() {
+		GooglePlaceSummary summary = client.toSummary(Map.of(
+			"id", "place-id",
+			"displayName", Map.of("text", "사진 있는 미용샵"),
+			"photos", List.of(
+				Map.of(
+					"name", "places/place-id/photos/first-photo",
+					"authorAttributions", List.of(Map.of("displayName", "첫 번째 제공자"))
+				),
+				Map.of("name", "places/place-id/photos/second-photo")
+			)
+		));
+
+		assertThat(summary.thumbnailPhoto()).isNotNull();
+		assertThat(summary.thumbnailPhoto().name()).isEqualTo("places/place-id/photos/first-photo");
+		assertThat(summary.thumbnailPhoto().authorAttributions()).containsExactly("첫 번째 제공자");
+	}
+
+	@Test
+	void returnsNullThumbnailWhenSearchHasNoPhoto() {
+		GooglePlaceSummary summary = client.toSummary(Map.of(
+			"id", "place-id",
+			"displayName", Map.of("text", "사진 없는 미용샵")
+		));
+
+		assertThat(summary.thumbnailPhoto()).isNull();
+	}
 }
