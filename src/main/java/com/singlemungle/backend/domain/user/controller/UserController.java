@@ -41,7 +41,7 @@ public class UserController {
     public ApiResponse<Void> updateMyInfo(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @Valid @RequestBody UserUpdateRequest req) {
-        userService.updateUserInfo(principal.userId(), req.nickname(), req.phone());
+        userService.updateUserInfo(principal.userId(), req.nickname(), req.phone(), req.profileImageUrl());
         return ApiResponse.success();
     }
 
