@@ -106,7 +106,12 @@ public class User {
 		if (phone != null) {
 			this.phone = phone;
 		}
+        if (profileImageUrl != null) {
+            this.profileImageUrl = profileImageUrl;
+        }
+
 		this.updatedAt = LocalDateTime.now();
+
 	}
 
 	public void delete() {
