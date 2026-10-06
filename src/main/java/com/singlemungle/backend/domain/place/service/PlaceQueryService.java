@@ -111,7 +111,7 @@ public class PlaceQueryService {
 			.filter(place -> beautyShopPlaceService.isBeautyShopCandidate(place.name()))
 			.map(place -> new NearbyPlaceItemResponse(
 				place.googlePlaceId(), place.name(), place.formattedAddress(), place.latitude(), place.longitude(),
-				null, place.googleMapsUri()
+				place.rating(), place.userRatingCount(), null, place.googleMapsUri()
 			))
 			.limit(resultLimit)
 			.toList();
@@ -179,7 +179,7 @@ public class PlaceQueryService {
 		);
 		return new NearbyPlaceItemResponse(
 			place.googlePlaceId(), place.name(), place.formattedAddress(), place.latitude(), place.longitude(),
-			distance, place.googleMapsUri()
+			place.rating(), place.userRatingCount(), distance, place.googleMapsUri()
 		);
 	}
 

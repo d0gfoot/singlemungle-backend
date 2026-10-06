@@ -1,4 +1,5 @@
 delete from refresh_tokens;
+delete from grooming_style_preferences;
 delete from beauty_style_simulations;
 delete from review_images;
 delete from reviews;

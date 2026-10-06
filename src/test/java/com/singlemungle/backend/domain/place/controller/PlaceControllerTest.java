@@ -33,6 +33,8 @@ class PlaceControllerTest {
 			.andExpect(jsonPath("$.data.places.length()").value(1))
 			.andExpect(jsonPath("$.data.places[0].googlePlaceId").value(FakeGooglePlacesClient.PLACE_ID))
 			.andExpect(jsonPath("$.data.places[0].name").value("몽실몽실펫살롱"))
+			.andExpect(jsonPath("$.data.places[0].rating").value(4.8))
+			.andExpect(jsonPath("$.data.places[0].userRatingCount").value(25))
 			.andExpect(jsonPath("$.data.places[0].distanceMeters").value(greaterThanOrEqualTo(0)))
 			.andExpect(jsonPath("$.data.nextPageToken").doesNotExist());
 	}
@@ -58,6 +60,8 @@ class PlaceControllerTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
 			.andExpect(jsonPath("$.data.places[0].googlePlaceId").value(FakeGooglePlacesClient.PLACE_ID))
+			.andExpect(jsonPath("$.data.places[0].rating").value(4.8))
+			.andExpect(jsonPath("$.data.places[0].userRatingCount").value(25))
 			.andExpect(jsonPath("$.data.places[0].distanceMeters").doesNotExist());
 	}
 

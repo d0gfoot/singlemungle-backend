@@ -58,6 +58,38 @@ class BeautyControllerTest {
 	}
 
 	@Test
+	void getStylePresetStatisticsReturnsOtherUsersLatestSelectionForSameBreed() throws Exception {
+		mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
+				.file(petImage())
+				.param("petId", "102")
+				.param("googlePlaceId", "ChIJ-demo-beauty-shop")
+				.param("stylePresetId", "1")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken(2L)))
+			.andExpect(status().isAccepted());
+
+		mockMvc.perform(get("/api/v1/beauty/style-presets/statistics")
+				.param("petId", "101")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data.breedCode").value("POODLE"))
+			.andExpect(jsonPath("$.data.breedName").value("푸들"))
+			.andExpect(jsonPath("$.data.totalUsers").value(1))
+			.andExpect(jsonPath("$.data.statistics.length()").value(5))
+			.andExpect(jsonPath("$.data.statistics[0].stylePresetId").value(1))
+			.andExpect(jsonPath("$.data.statistics[0].selectedUserCount").value(1))
+			.andExpect(jsonPath("$.data.statistics[0].percentage").value(100.0));
+	}
+
+	@Test
+	void getStylePresetStatisticsRequiresOwnedPet() throws Exception {
+		mockMvc.perform(get("/api/v1/beauty/style-presets/statistics")
+				.param("petId", "102")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("PET_NOT_FOUND"));
+	}
+
+	@Test
 	void createStyleSimulationReturnsPendingAndCompletesAsynchronously() throws Exception {
 		MvcResult result = mockMvc.perform(multipart("/api/v1/beauty/style-simulations")
 				.file(petImage())
@@ -225,6 +257,10 @@ class BeautyControllerTest {
 	}
 
 	private String bearerToken() {
-		return "Bearer " + jwtTokenService.createAccessToken(1L, UserRole.USER);
+		return bearerToken(1L);
+	}
+
+	private String bearerToken(Long userId) {
+		return "Bearer " + jwtTokenService.createAccessToken(userId, UserRole.USER);
 	}
 }

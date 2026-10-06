@@ -53,6 +53,7 @@ public class BeautyStyleSimulationService {
 	private final PetRepository petRepository;
 	private final BeautyShopPlaceService beautyShopPlaceService;
 	private final GroomingStylePresetRepository presetRepository;
+	private final GroomingStyleStatisticsService statisticsService;
 	private final ReviewRepository reviewRepository;
 	private final ReviewImageRepository reviewImageRepository;
 	private final BeautyStylePromptBuilder promptBuilder;
@@ -109,6 +110,7 @@ public class BeautyStyleSimulationService {
 				null,
 				STORAGE_PROVIDER
 			));
+			statisticsService.recordSelection(userId, pet, styleInput.stylePresetId(), simulation.getId());
 
 			PetGroomingContext petContext = promptBuilder.petContext(pet.getBreed(), pet.getWeight(), pet.getMemo());
 			String prompt = promptBuilder.build(

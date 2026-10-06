@@ -34,6 +34,8 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		"places.displayName",
 		"places.formattedAddress",
 		"places.location",
+		"places.rating",
+		"places.userRatingCount",
 		"places.googleMapsUri",
 		"nextPageToken"
 	);
@@ -219,12 +221,15 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 
 	private GooglePlaceSummary toSummary(Map<String, Object> place) {
 		Map<String, Object> location = asMap(place.get("location"));
+		Integer userRatingCount = asInteger(place.get("userRatingCount"));
 		return new GooglePlaceSummary(
 			asString(place.get("id")),
 			displayName(place),
 			asString(place.get("formattedAddress")),
 			asBigDecimal(location.get("latitude")),
 			asBigDecimal(location.get("longitude")),
+			asBigDecimal(place.get("rating")),
+			userRatingCount == null ? 0 : userRatingCount,
 			asString(place.get("googleMapsUri"))
 		);
 	}
