@@ -10,6 +10,7 @@ public record GooglePlaceSummary(
 	BigDecimal longitude,
 	BigDecimal rating,
 	Integer userRatingCount,
+	GooglePlacePhoto thumbnailPhoto,
 	String googleMapsUri
 ) {
 }

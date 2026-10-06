@@ -111,7 +111,7 @@ public class PlaceQueryService {
 			.filter(place -> beautyShopPlaceService.isBeautyShopCandidate(place.name()))
 			.map(place -> new NearbyPlaceItemResponse(
 				place.googlePlaceId(), place.name(), place.formattedAddress(), place.latitude(), place.longitude(),
-				place.rating(), place.userRatingCount(), null, place.googleMapsUri()
+				place.rating(), place.userRatingCount(), toPhotoResponse(place), null, place.googleMapsUri()
 			))
 			.limit(resultLimit)
 			.toList();
@@ -179,7 +179,17 @@ public class PlaceQueryService {
 		);
 		return new NearbyPlaceItemResponse(
 			place.googlePlaceId(), place.name(), place.formattedAddress(), place.latitude(), place.longitude(),
-			place.rating(), place.userRatingCount(), distance, place.googleMapsUri()
+			place.rating(), place.userRatingCount(), toPhotoResponse(place), distance, place.googleMapsUri()
+		);
+	}
+
+	private PlacePhotoResponse toPhotoResponse(GooglePlaceSummary place) {
+		if (place.thumbnailPhoto() == null) {
+			return null;
+		}
+		return new PlacePhotoResponse(
+			place.thumbnailPhoto().name(),
+			place.thumbnailPhoto().authorAttributions()
 		);
 	}
 

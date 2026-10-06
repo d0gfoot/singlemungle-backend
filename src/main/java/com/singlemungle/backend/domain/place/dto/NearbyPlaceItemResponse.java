@@ -15,6 +15,8 @@ public record NearbyPlaceItemResponse(
 	BigDecimal rating,
 	@Schema(description = "Google 평가 수", example = "128")
 	Integer userRatingCount,
+	@Schema(description = "대표 사진. 사진이 없으면 null")
+	PlacePhotoResponse thumbnail,
 	@Schema(description = "검색 기준점과의 거리. 전국 검색에서는 null", example = "320")
 	Long distanceMeters,
 	String googleMapsUri

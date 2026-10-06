@@ -28,6 +28,10 @@ public class FakeGooglePlacesClient implements GooglePlacesClient {
 			longitude,
 			new BigDecimal("4.8"),
 			25,
+			new GooglePlacePhoto(
+				"places/ChIJ-demo-beauty-shop/photos/demo-photo",
+				List.of("테스트 제공자")
+			),
 			"https://maps.google.com/?cid=demo"
 		)), null);
 	}

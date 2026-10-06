@@ -23,7 +23,7 @@ API 키는 Places API (New)로 제한하고, 운영 환경에서는 백엔드 �
 GET /api/v1/places/nearby?latitude=37.5000530744517&longitude=126.86799268384159&radiusMeters=10000&limit=20
 ```
 
-좌표와 반경을 생략하면 시연 기본값을 사용합니다. 각 장소에는 Google 평균 평점 `rating`과 평가 수 `userRatingCount`가 포함되며, Google에 평점이 없으면 `rating`은 `null`입니다. 응답의 `googlePlaceId`를 상세 조회, 자체 리뷰, 즐겨찾기, AI 시뮬레이션에 그대로 전달합니다. `nextPageToken`이 있으면 다음 요청의 `pageToken`으로 전달합니다.
+좌표와 반경을 생략하면 시연 기본값을 사용합니다. 각 장소에는 Google 평균 평점 `rating`, 평가 수 `userRatingCount`, 첫 번째 대표 사진 `thumbnail`이 포함됩니다. Google에 평점이나 사진이 없으면 각각 `null`입니다. 응답의 `googlePlaceId`를 상세 조회, 자체 리뷰, 즐겨찾기, AI 시뮬레이션에 그대로 전달합니다. `nextPageToken`이 있으면 다음 요청의 `pageToken`으로 전달합니다.
 
 상세 조회와 연계 기능은 Google Places의 `pet_care` 타입을 검증합니다. 상호명은 업체마다 표현이 다양하므로 미용 키워드를 필수로 요구하지 않으며, 학원·아카데미·교육원 등 명확한 교육기관은 검색과 상세 조회에서 제외합니다. 프론트는 주변 애견 미용샵 조회 응답에서 받은 `googlePlaceId`를 사용해야 합니다.
 
@@ -52,16 +52,17 @@ GET /api/v1/places/{googlePlaceId}
 GET /api/v1/places/photos?photoName={photoName}&maxWidthPx=800
 ```
 
-상세 응답의 `photos[].photoName`을 전달하면 `photoUri`를 반환합니다. URL은 단기 URL이므로 DB에 저장하지 말고 화면 표시 시 사용하며, 만료되면 다시 요청합니다. `maxWidthPx`는 1~1,600만 허용합니다.
+목록 응답의 `thumbnail.photoName` 또는 상세 응답의 `photos[].photoName`을 전달하면 `photoUri`를 반환합니다. 목록 썸네일은 `maxWidthPx=400` 정도를 권장합니다. URL은 단기 URL이므로 DB에 저장하지 말고 화면 표시 시 사용하며, 만료되면 다시 요청합니다. `maxWidthPx`는 1~1,600만 허용합니다.
 
 ## 프론트 처리
 
 1. 현재 위치 권한이 있으면 사용자 좌표로 주변 API를 호출합니다.
 2. 권한이 없거나 시연 모드이면 요청 좌표를 생략합니다.
 3. 응답 좌표로 Google Map 마커를 표시합니다.
-4. 마커 선택 시 `googlePlaceId`로 상세 API를 호출합니다.
-5. 사진이 있으면 `photoName`으로 사진 URL API를 호출합니다.
-6. 자체 리뷰 및 AI 시뮬레이션 요청에도 동일한 `googlePlaceId`를 사용합니다.
+4. `thumbnail`이 있으면 `thumbnail.photoName`으로 사진 URL API를 호출해 목록 이미지를 표시합니다.
+5. 마커 선택 시 `googlePlaceId`로 상세 API를 호출합니다.
+6. 상세 사진이 있으면 `photoName`으로 사진 URL API를 호출합니다.
+7. 자체 리뷰 및 AI 시뮬레이션 요청에도 동일한 `googlePlaceId`를 사용합니다.
 
 Google Places 장애 시 `PLACE_PROVIDER_UNAVAILABLE`, 시간 초과 시 `PLACE_PROVIDER_TIMEOUT`, 호출 한도 초과 시 `PLACE_PROVIDER_RATE_LIMITED`가 반환됩니다.
 
@@ -79,7 +80,7 @@ GET /api/v1/places/search?query=멍살롱
 GET /api/v1/places/search?query=멍살롱&scope=NEARBY&latitude=37.5000530744517&longitude=126.86799268384159&radiusMeters=10000&limit=20
 ```
 
-`scope=NEARBY`에서 좌표와 반경을 생략하면 시연 기본값을 사용하며, 거리순으로 반환합니다. 전국/주변 검색 결과 모두 `rating`, `userRatingCount`를 포함합니다. 두 범위 모두 교육기관을 제외하고 결과의 `googlePlaceId`로 상세 API를 호출합니다. `nextPageToken`이 있으면 같은 검색 조건과 함께 다음 요청에 전달합니다.
+`scope=NEARBY`에서 좌표와 반경을 생략하면 시연 기본값을 사용하며, 거리순으로 반환합니다. 전국/주변 검색 결과 모두 `rating`, `userRatingCount`, `thumbnail`을 포함합니다. 두 범위 모두 교육기관을 제외하고 결과의 `googlePlaceId`로 상세 API를 호출합니다. `nextPageToken`이 있으면 같은 검색 조건과 함께 다음 요청에 전달합니다.
 
 ## 즐겨찾기
 

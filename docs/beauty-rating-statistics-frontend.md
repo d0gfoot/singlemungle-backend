@@ -18,7 +18,7 @@
 
 ## 미용샵 평점
 
-주변 조회와 이름 검색의 각 장소에 `rating`, `userRatingCount`가 포함됩니다.
+주변 조회와 이름 검색의 각 장소에 `rating`, `userRatingCount`, `thumbnail`이 포함됩니다.
 
 ```http
 GET /api/v1/places/nearby?latitude=37.5000530744517&longitude=126.86799268384159&radiusMeters=10000&limit=20
@@ -34,6 +34,10 @@ GET /api/v1/places/search?query=멍살롱&scope=NATIONWIDE
   "longitude": 126.86,
   "rating": 4.7,
   "userRatingCount": 128,
+  "thumbnail": {
+    "photoName": "places/ChIJ.../photos/AW...",
+    "authorAttributions": ["사진 제공자"]
+  },
   "distanceMeters": 320,
   "googleMapsUri": "https://maps.google.com/..."
 }
@@ -49,6 +53,31 @@ GET /api/v1/places/search?query=멍살롱&scope=NATIONWIDE
 - 현재 API는 평점 범위 필터나 평점순 정렬을 제공하지 않습니다. 클라이언트에서 받은 한 페이지 결과만 재정렬하면 전체 검색 결과 순서와 달라질 수 있으므로 임의 정렬은 권장하지 않습니다.
 
 `distanceMeters`는 주변 검색에서만 제공되며 전국 이름 검색에서는 `null`입니다.
+
+### 썸네일 표시
+
+`thumbnail`은 Google이 검색 결과에 제공한 첫 번째 사진이며, 사진이 없는 장소에서는 `null`입니다. 실제 이미지 URL은 다음 API로 발급합니다.
+
+```http
+GET /api/v1/places/photos?photoName={thumbnail.photoName}&maxWidthPx=400
+```
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "요청 성공",
+  "data": {
+    "photoUri": "https://lh3.googleusercontent.com/..."
+  }
+}
+```
+
+- `thumbnail`이 `null`이면 앱 기본 미용샵 이미지를 표시합니다.
+- 목록에서는 네트워크 사용량을 줄이기 위해 `maxWidthPx=400` 정도를 권장합니다.
+- `photoUri`는 단기 URL이므로 DB나 영구 저장소에 저장하지 않습니다.
+- URL이 만료되거나 이미지 로드가 실패하면 `photoName`으로 다시 발급합니다.
+- `authorAttributions`가 비어 있지 않으면 Google 정책에 맞게 사진 제공자 정보를 함께 표시합니다.
+- 화면에 보이는 목록 항목부터 URL을 요청하고, 같은 `photoName`의 URL은 메모리 캐시해 중복 요청을 줄입니다.
 
 ## 견종별 스타일 통계
 
@@ -128,6 +157,10 @@ type PlaceItem = {
   longitude: number;
   rating: number | null;
   userRatingCount: number;
+  thumbnail: {
+    photoName: string;
+    authorAttributions: string[];
+  } | null;
   distanceMeters: number | null;
   googleMapsUri: string | null;
 };

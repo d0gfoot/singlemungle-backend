@@ -35,6 +35,9 @@ class PlaceControllerTest {
 			.andExpect(jsonPath("$.data.places[0].name").value("몽실몽실펫살롱"))
 			.andExpect(jsonPath("$.data.places[0].rating").value(4.8))
 			.andExpect(jsonPath("$.data.places[0].userRatingCount").value(25))
+			.andExpect(jsonPath("$.data.places[0].thumbnail.photoName")
+				.value("places/ChIJ-demo-beauty-shop/photos/demo-photo"))
+			.andExpect(jsonPath("$.data.places[0].thumbnail.authorAttributions[0]").value("테스트 제공자"))
 			.andExpect(jsonPath("$.data.places[0].distanceMeters").value(greaterThanOrEqualTo(0)))
 			.andExpect(jsonPath("$.data.nextPageToken").doesNotExist());
 	}
@@ -62,6 +65,8 @@ class PlaceControllerTest {
 			.andExpect(jsonPath("$.data.places[0].googlePlaceId").value(FakeGooglePlacesClient.PLACE_ID))
 			.andExpect(jsonPath("$.data.places[0].rating").value(4.8))
 			.andExpect(jsonPath("$.data.places[0].userRatingCount").value(25))
+			.andExpect(jsonPath("$.data.places[0].thumbnail.photoName")
+				.value("places/ChIJ-demo-beauty-shop/photos/demo-photo"))
 			.andExpect(jsonPath("$.data.places[0].distanceMeters").doesNotExist());
 	}
 
