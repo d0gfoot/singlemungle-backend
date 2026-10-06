@@ -26,6 +26,8 @@ public class FakeGooglePlacesClient implements GooglePlacesClient {
 			"서울 구로구 경인로 123",
 			latitude,
 			longitude,
+			new BigDecimal("4.8"),
+			25,
 			"https://maps.google.com/?cid=demo"
 		)), null);
 	}

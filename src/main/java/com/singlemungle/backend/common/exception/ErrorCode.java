@@ -18,6 +18,7 @@ public enum ErrorCode {
 	PLACE_PROVIDER_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "PLACE_PROVIDER_RATE_LIMITED", "장소 조회 요청이 너무 많습니다"),
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "사용자를 찾을 수 없습니다"),
 	PET_NOT_FOUND(HttpStatus.NOT_FOUND, "PET_NOT_FOUND", "반려동물을 찾을 수 없습니다"),
+	PET_BREED_REQUIRED(HttpStatus.BAD_REQUEST, "PET_BREED_REQUIRED", "스타일 통계를 조회하려면 반려동물 견종 정보가 필요합니다"),
 	HEALTH_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "HEALTH_RECORD_NOT_FOUND", "건강 기록을 찾을 수 없습니다"),
 	SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "SCHEDULE_NOT_FOUND", "일정을 찾을 수 없습니다"),
 	STYLE_SIMULATION_NOT_FOUND(HttpStatus.NOT_FOUND, "STYLE_SIMULATION_NOT_FOUND", "스타일 시뮬레이션 결과를 찾을 수 없습니다"),

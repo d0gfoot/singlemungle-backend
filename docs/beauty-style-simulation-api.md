@@ -29,6 +29,39 @@ Authorization: Bearer {accessToken}
 
 응답 `data`는 `stylePresetId`, `name`, `description`, `exampleImageUrl`을 가진 배열입니다.
 
+### 견종별 선택 통계
+
+```http
+GET /api/v1/beauty/style-presets/statistics?petId=101
+Authorization: Bearer {accessToken}
+```
+
+현재 사용자가 소유한 반려동물의 견종을 기준으로 다른 사용자들의 최신 프리셋 선택 통계를 반환합니다. 한 사용자가 같은 견종으로 여러 번 생성해도 가장 최근 선택 한 건만 집계되며, 조회 중인 사용자의 선택은 제외됩니다.
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "요청 성공",
+  "data": {
+    "breedCode": "POODLE",
+    "breedName": "푸들",
+    "totalUsers": 20,
+    "statistics": [
+      {
+        "stylePresetId": 1,
+        "name": "곰돌이컷",
+        "description": "얼굴을 둥글게 다듬는 스타일",
+        "exampleImageUrl": null,
+        "selectedUserCount": 12,
+        "percentage": 60.0
+      }
+    ]
+  }
+}
+```
+
+선택 이력이 없는 프리셋도 `selectedUserCount: 0`, `percentage: 0.0`으로 포함됩니다. 반려동물 소유권이 없으면 `PET_NOT_FOUND`, 견종 정보가 비어 있으면 `PET_BREED_REQUIRED`를 반환합니다.
+
 ## 자체 리뷰
 
 ```http
@@ -121,4 +154,4 @@ DELETE /api/v1/beauty/style-simulations/{simulationId}
 
 ## 주요 오류
 
-`PET_NOT_FOUND`, `PLACE_NOT_FOUND`, `STYLE_PRESET_NOT_FOUND`, `REVIEW_IMAGE_NOT_FOUND`, `AI_REFERENCE_NOT_ALLOWED`, `INVALID_REQUEST`, `IMAGE_GENERATION_FAILED`를 처리해야 합니다.
+`PET_NOT_FOUND`, `PET_BREED_REQUIRED`, `PLACE_NOT_FOUND`, `STYLE_PRESET_NOT_FOUND`, `REVIEW_IMAGE_NOT_FOUND`, `AI_REFERENCE_NOT_ALLOWED`, `INVALID_REQUEST`, `IMAGE_GENERATION_FAILED`를 처리해야 합니다.
