@@ -1,9 +1,10 @@
 # Demo review images
 
-Place team-owned or properly licensed `seal-cut.jpg` and `teddy-cut.jpg` files here, adjust IDs in `scripts/demo-reviews.json`, and run:
+Optional review images are intentionally not committed. Place team-owned or properly licensed JPEG files here with these names:
 
-```bash
-python3 scripts/seed_demo_reviews.py
-```
+- `demo-review-01.jpg`: Pomeranian teddy cut
+- `demo-review-02.jpg`: Pomeranian seal cut
+- `demo-review-03.jpg`: Poodle lion cut
+- `demo-review-04.jpg`: Bichon seal cut
 
-The command is idempotent for each manifest entry and marks its image as allowed for AI reference use.
+`demo/manage-demo-data.sh seed` copies all four files to `IMAGE_STORAGE_DIRECTORY` and creates AI-reference-enabled review image rows. If any file is absent, the seed still succeeds but creates text-only reviews.
