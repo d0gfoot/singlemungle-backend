@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class BeautyShopPlaceService {
 
-	private static final List<String> BEAUTY_SHOP_NAME_KEYWORDS = List.of(
-		"미용", "애견", "반려견", "펫", "살롱", "groom", "salon"
+	private static final List<String> EDUCATION_BUSINESS_KEYWORDS = List.of(
+		"학원", "아카데미", "교육원", "학교", "훈련소", "academy", "school", "institute", "training center"
 	);
 
 	private final GooglePlacesClient googlePlacesClient;
@@ -37,10 +37,14 @@ public class BeautyShopPlaceService {
 		return googlePlaceId.trim();
 	}
 
+	public boolean isBeautyShopCandidate(String placeName) {
+		String normalizedName = placeName == null ? "" : placeName.toLowerCase(Locale.ROOT);
+		return EDUCATION_BUSINESS_KEYWORDS.stream().noneMatch(normalizedName::contains);
+	}
+
 	private boolean isBeautyShop(GooglePlaceDetail detail) {
-		boolean petCare = detail.types() != null && detail.types().contains("pet_care");
-		String normalizedName = detail.name() == null ? "" : detail.name().toLowerCase(Locale.ROOT);
-		boolean beautyName = BEAUTY_SHOP_NAME_KEYWORDS.stream().anyMatch(normalizedName::contains);
-		return petCare && beautyName;
+		return detail.types() != null
+			&& detail.types().contains("pet_care")
+			&& isBeautyShopCandidate(detail.name());
 	}
 }

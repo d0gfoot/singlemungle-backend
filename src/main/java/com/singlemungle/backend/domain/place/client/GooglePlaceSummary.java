@@ -8,6 +8,9 @@ public record GooglePlaceSummary(
 	String formattedAddress,
 	BigDecimal latitude,
 	BigDecimal longitude,
+	BigDecimal rating,
+	Integer userRatingCount,
+	GooglePlacePhoto thumbnailPhoto,
 	String googleMapsUri
 ) {
 }

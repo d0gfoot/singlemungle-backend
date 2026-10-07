@@ -24,4 +24,4 @@ insert into pets (
 	updated_at
 ) values
 	(101, 1, '초코', '푸들', 'MALE', date '2020-01-01', 4.5, null, '활발함', true, current_timestamp, current_timestamp),
-	(102, 2, '라떼', '말티즈', 'FEMALE', date '2021-02-02', 3.2, null, '낯가림', true, current_timestamp, current_timestamp);
+	(102, 2, '라떼', 'Poodle', 'FEMALE', date '2021-02-02', 3.2, null, '낯가림', true, current_timestamp, current_timestamp);

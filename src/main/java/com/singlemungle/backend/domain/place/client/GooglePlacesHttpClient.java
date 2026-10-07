@@ -34,6 +34,9 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		"places.displayName",
 		"places.formattedAddress",
 		"places.location",
+		"places.rating",
+		"places.userRatingCount",
+		"places.photos",
 		"places.googleMapsUri",
 		"nextPageToken"
 	);
@@ -51,7 +54,16 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		"userRatingCount",
 		"types",
 		"photos.name",
-		"photos.authorAttributions"
+		"photos.authorAttributions",
+		"reviews.name",
+		"reviews.rating",
+		"reviews.text",
+		"reviews.originalText",
+		"reviews.relativePublishTimeDescription",
+		"reviews.publishTime",
+		"reviews.authorAttribution",
+		"reviews.googleMapsUri",
+		"reviews.flagContentUri"
 	);
 
 	private final GooglePlacesProperties properties;
@@ -78,12 +90,44 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 		int pageSize,
 		String pageToken
 	) {
+		return searchBeautyShops(properties.getBeautySearchQuery(), latitude, longitude, radiusMeters, pageSize, pageToken);
+	}
+
+	@Override
+	public GooglePlaceSearchResult searchBeautyShopsByName(
+		String query,
+		int pageSize,
+		String pageToken
+	) {
+		return searchBeautyShops(query, null, null, null, pageSize, pageToken);
+	}
+
+	@Override
+	public GooglePlaceSearchResult searchNearbyBeautyShopsByName(
+		String query,
+		BigDecimal latitude,
+		BigDecimal longitude,
+		int radiusMeters,
+		int pageSize,
+		String pageToken
+	) {
+		return searchBeautyShops(query, latitude, longitude, radiusMeters, pageSize, pageToken);
+	}
+
+	private GooglePlaceSearchResult searchBeautyShops(
+		String textQuery,
+		BigDecimal latitude,
+		BigDecimal longitude,
+		Integer radiusMeters,
+		int pageSize,
+		String pageToken
+	) {
 		try {
 			Map<String, Object> response = restClient.post()
 				.uri("/places:searchText")
 				.header(HttpHeaders.CONTENT_TYPE, "application/json")
 				.header("X-Goog-FieldMask", SEARCH_FIELD_MASK)
-				.body(searchRequest(latitude, longitude, radiusMeters, pageSize, pageToken))
+				.body(searchRequest(textQuery, latitude, longitude, radiusMeters, pageSize, pageToken))
 				.retrieve()
 				.body(new ParameterizedTypeReference<>() {
 				});
@@ -149,43 +193,51 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 	}
 
 	private Map<String, Object> searchRequest(
+		String textQuery,
 		BigDecimal latitude,
 		BigDecimal longitude,
-		int radiusMeters,
+		Integer radiusMeters,
 		int pageSize,
 		String pageToken
 	) {
 		Map<String, Object> body = new LinkedHashMap<>();
-		body.put("textQuery", properties.getBeautySearchQuery());
+		body.put("textQuery", textQuery);
 		body.put("includedType", "pet_care");
 		body.put("languageCode", properties.getLanguageCode());
 		body.put("regionCode", properties.getRegionCode());
 		body.put("pageSize", pageSize);
-		body.put("rankPreference", "DISTANCE");
+		body.put("rankPreference", latitude == null ? "RELEVANCE" : "DISTANCE");
 		body.put("includePureServiceAreaBusinesses", false);
-		body.put("locationBias", Map.of("circle", Map.of(
-			"center", Map.of("latitude", latitude, "longitude", longitude),
-			"radius", radiusMeters
-		)));
+		if (latitude != null && longitude != null && radiusMeters != null) {
+			body.put("locationBias", Map.of("circle", Map.of(
+				"center", Map.of("latitude", latitude, "longitude", longitude),
+				"radius", radiusMeters
+			)));
+		}
 		if (pageToken != null && !pageToken.isBlank()) {
 			body.put("pageToken", pageToken);
 		}
 		return body;
 	}
 
-	private GooglePlaceSummary toSummary(Map<String, Object> place) {
+	GooglePlaceSummary toSummary(Map<String, Object> place) {
 		Map<String, Object> location = asMap(place.get("location"));
+		Integer userRatingCount = asInteger(place.get("userRatingCount"));
+		List<GooglePlacePhoto> photos = photos(place.get("photos"));
 		return new GooglePlaceSummary(
 			asString(place.get("id")),
 			displayName(place),
 			asString(place.get("formattedAddress")),
 			asBigDecimal(location.get("latitude")),
 			asBigDecimal(location.get("longitude")),
+			asBigDecimal(place.get("rating")),
+			userRatingCount == null ? 0 : userRatingCount,
+			photos.isEmpty() ? null : photos.getFirst(),
 			asString(place.get("googleMapsUri"))
 		);
 	}
 
-	private GooglePlaceDetail toDetail(Map<String, Object> place) {
+	GooglePlaceDetail toDetail(Map<String, Object> place) {
 		Map<String, Object> location = asMap(place.get("location"));
 		Map<String, Object> currentHours = asMap(place.get("currentOpeningHours"));
 		Map<String, Object> regularHours = asMap(place.get("regularOpeningHours"));
@@ -203,8 +255,33 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 			asInteger(place.get("userRatingCount")),
 			asList(place.get("types")).stream().map(this::asString).toList(),
 			asList(regularHours.get("weekdayDescriptions")).stream().map(this::asString).toList(),
-			photos(place.get("photos"))
+			photos(place.get("photos")),
+			reviews(place.get("reviews"))
 		);
+	}
+
+	private List<GooglePlaceReview> reviews(Object value) {
+		List<GooglePlaceReview> reviews = new ArrayList<>();
+		for (Object reviewValue : asList(value)) {
+			Map<String, Object> review = asMap(reviewValue);
+			Map<String, Object> author = asMap(review.get("authorAttribution"));
+			reviews.add(new GooglePlaceReview(
+				asString(review.get("name")),
+				asBigDecimal(review.get("rating")),
+				localizedText(review.get("text")),
+				localizedText(review.get("originalText")),
+				asString(review.get("relativePublishTimeDescription")),
+				asString(review.get("publishTime")),
+				new GooglePlaceReviewAuthor(
+					asString(author.get("displayName")),
+					asString(author.get("uri")),
+					asString(author.get("photoUri"))
+				),
+				asString(review.get("googleMapsUri")),
+				asString(review.get("flagContentUri"))
+			));
+		}
+		return reviews;
 	}
 
 	private List<GooglePlacePhoto> photos(Object value) {
@@ -234,6 +311,10 @@ public class GooglePlacesHttpClient implements GooglePlacesClient {
 
 	private String displayName(Map<String, Object> place) {
 		return asString(asMap(place.get("displayName")).get("text"));
+	}
+
+	private String localizedText(Object value) {
+		return asString(asMap(value).get("text"));
 	}
 
 	private Object value(Map<String, Object> map, String key) {

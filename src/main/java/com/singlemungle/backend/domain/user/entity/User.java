@@ -107,6 +107,7 @@ public class User {
 			this.phone = phone;
 		}
 		this.updatedAt = LocalDateTime.now();
+
 	}
 
 	public void delete() {

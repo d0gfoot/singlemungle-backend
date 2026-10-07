@@ -33,6 +33,11 @@ class PlaceControllerTest {
 			.andExpect(jsonPath("$.data.places.length()").value(1))
 			.andExpect(jsonPath("$.data.places[0].googlePlaceId").value(FakeGooglePlacesClient.PLACE_ID))
 			.andExpect(jsonPath("$.data.places[0].name").value("몽실몽실펫살롱"))
+			.andExpect(jsonPath("$.data.places[0].rating").value(4.8))
+			.andExpect(jsonPath("$.data.places[0].userRatingCount").value(25))
+			.andExpect(jsonPath("$.data.places[0].thumbnail.photoName")
+				.value("places/ChIJ-demo-beauty-shop/photos/demo-photo"))
+			.andExpect(jsonPath("$.data.places[0].thumbnail.authorAttributions[0]").value("테스트 제공자"))
 			.andExpect(jsonPath("$.data.places[0].distanceMeters").value(greaterThanOrEqualTo(0)))
 			.andExpect(jsonPath("$.data.nextPageToken").doesNotExist());
 	}
@@ -52,6 +57,38 @@ class PlaceControllerTest {
 	}
 
 	@Test
+	void searchBeautyShopsByNameNationwideByDefault() throws Exception {
+		mockMvc.perform(get("/api/v1/places/search")
+				.param("query", "멍살롱"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("SUCCESS"))
+			.andExpect(jsonPath("$.data.places[0].googlePlaceId").value(FakeGooglePlacesClient.PLACE_ID))
+			.andExpect(jsonPath("$.data.places[0].rating").value(4.8))
+			.andExpect(jsonPath("$.data.places[0].userRatingCount").value(25))
+			.andExpect(jsonPath("$.data.places[0].thumbnail.photoName")
+				.value("places/ChIJ-demo-beauty-shop/photos/demo-photo"))
+			.andExpect(jsonPath("$.data.places[0].distanceMeters").doesNotExist());
+	}
+
+	@Test
+	void searchBeautyShopsByNameNearCurrentLocation() throws Exception {
+		mockMvc.perform(get("/api/v1/places/search")
+				.param("query", "멍살롱")
+				.param("scope", "NEARBY")
+				.param("latitude", "37.5000530744517")
+				.param("longitude", "126.86799268384159"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data.places[0].distanceMeters").value(greaterThanOrEqualTo(0)));
+	}
+
+	@Test
+	void searchBeautyShopsRejectsBlankQuery() throws Exception {
+		mockMvc.perform(get("/api/v1/places/search").param("query", " "))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+	}
+
+	@Test
 	void findPlaceDetailReturnsGooglePlaceData() throws Exception {
 		mockMvc.perform(get("/api/v1/places/{googlePlaceId}", FakeGooglePlacesClient.PLACE_ID))
 			.andExpect(status().isOk())
@@ -62,7 +99,12 @@ class PlaceControllerTest {
 			.andExpect(jsonPath("$.data.rating").value(4.8))
 			.andExpect(jsonPath("$.data.userRatingCount").value(25))
 			.andExpect(jsonPath("$.data.photos[0].photoName")
-				.value("places/ChIJ-demo-beauty-shop/photos/demo-photo"));
+				.value("places/ChIJ-demo-beauty-shop/photos/demo-photo"))
+			.andExpect(jsonPath("$.data.googleReviews[0].rating").value(5.0))
+			.andExpect(jsonPath("$.data.googleReviews[0].text").value("친절하고 미용 결과가 만족스러웠어요."))
+			.andExpect(jsonPath("$.data.googleReviews[0].author.displayName").value("Google 리뷰 작성자"))
+			.andExpect(jsonPath("$.data.googleReviews[0].googleMapsUri")
+				.value("https://www.google.com/maps/reviews/demo"));
 	}
 
 	@Test

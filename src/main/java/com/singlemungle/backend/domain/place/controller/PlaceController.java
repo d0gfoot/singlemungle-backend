@@ -6,6 +6,7 @@ import com.singlemungle.backend.common.response.ApiResponse;
 import com.singlemungle.backend.domain.place.dto.NearbyPlacesResponse;
 import com.singlemungle.backend.domain.place.dto.PlaceDetailResponse;
 import com.singlemungle.backend.domain.place.dto.PlacePhotoUriResponse;
+import com.singlemungle.backend.domain.place.dto.PlaceSearchScope;
 import com.singlemungle.backend.domain.place.service.PlaceQueryService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,8 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.validation.annotation.Validated;
@@ -47,8 +50,29 @@ public class PlaceController {
 		);
 	}
 
+	@GetMapping("/search")
+	@Operation(summary = "애견 미용샵 이름 검색", description = "기본적으로 전국 관련성 검색을 수행하며, NEARBY 범위에서는 위치 기준 최대 10km 내 결과를 조회합니다.")
+	public ApiResponse<NearbyPlacesResponse> searchBeautyShopsByName(
+		@RequestParam @NotBlank @Size(max = 100) String query,
+		@RequestParam(defaultValue = "NATIONWIDE") PlaceSearchScope scope,
+		@RequestParam(required = false) @DecimalMin("-90.0") @DecimalMax("90.0") BigDecimal latitude,
+		@RequestParam(required = false) @DecimalMin("-180.0") @DecimalMax("180.0") BigDecimal longitude,
+		@RequestParam(required = false) @Min(1) @Max(10000) Integer radiusMeters,
+		@RequestParam(required = false) @Min(1) @Max(20) Integer limit,
+		@RequestParam(required = false) String pageToken
+	) {
+		return ApiResponse.success(
+			placeQueryService.searchBeautyShopsByName(
+				query, scope, latitude, longitude, radiusMeters, limit, pageToken
+			)
+		);
+	}
+
 	@GetMapping("/{googlePlaceId}")
-	@Operation(summary = "애견 미용샵 상세 조회", description = "Google Place ID로 최신 장소 상세 정보를 조회합니다.")
+	@Operation(
+		summary = "애견 미용샵 상세 조회",
+		description = "Google Place ID로 최신 장소 정보와 표시 전용 Google 리뷰를 조회합니다. Google 리뷰는 관련성 순이며 자체 리뷰와 별개입니다."
+	)
 	public ApiResponse<PlaceDetailResponse> findPlaceDetail(
 		@Parameter(description = "Google Place ID") @PathVariable String googlePlaceId
 	) {

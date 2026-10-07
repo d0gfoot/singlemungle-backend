@@ -20,22 +20,13 @@ class BeautyShopPlaceServiceTest {
 	private final BeautyShopPlaceService service = new BeautyShopPlaceService(googlePlacesClient);
 
 	@Test
-	void acceptsPetCareSalon() {
+	void acceptsPetCarePlaceWithoutKnownGroomingKeyword() {
 		when(googlePlacesClient.getPlaceDetail("place-id"))
-			.thenReturn(place("멍살롱", List.of("pet_care", "establishment")));
+			.thenReturn(place("그루밍솔루션 개봉점", List.of("pet_care", "establishment")));
 
 		GooglePlaceDetail result = service.getVerifiedBeautyShop(" place-id ");
 
-		assertThat(result.name()).isEqualTo("멍살롱");
-	}
-
-	@Test
-	void rejectsPetCafeWithoutGroomingKeyword() {
-		when(googlePlacesClient.getPlaceDetail("place-id"))
-			.thenReturn(place("강아지 놀이터", List.of("pet_care", "dog_cafe")));
-
-		assertThatThrownBy(() -> service.getVerifiedBeautyShop("place-id"))
-			.isInstanceOf(BusinessException.class);
+		assertThat(result.name()).isEqualTo("그루밍솔루션 개봉점");
 	}
 
 	@Test
@@ -47,10 +38,26 @@ class BeautyShopPlaceServiceTest {
 			.isInstanceOf(BusinessException.class);
 	}
 
+	@Test
+	void rejectsPetGroomingAcademy() {
+		when(googlePlacesClient.getPlaceDetail("place-id"))
+			.thenReturn(place("한국애견미용학원", List.of("pet_care", "establishment")));
+
+		assertThatThrownBy(() -> service.getVerifiedBeautyShop("place-id"))
+			.isInstanceOf(BusinessException.class);
+	}
+
+	@Test
+	void excludesEducationBusinessFromSearchCandidates() {
+		assertThat(service.isBeautyShopCandidate("펫뷰티 아카데미")).isFalse();
+		assertThat(service.isBeautyShopCandidate("Dog Grooming Academy")).isFalse();
+		assertThat(service.isBeautyShopCandidate("그루밍솔루션 개봉점")).isTrue();
+	}
+
 	private GooglePlaceDetail place(String name, List<String> types) {
 		return new GooglePlaceDetail(
 			"place-id", name, "서울", BigDecimal.ONE, BigDecimal.ONE,
-			null, null, null, null, null, null, types, List.of(), List.of()
+			null, null, null, null, null, null, types, List.of(), List.of(), List.of()
 		);
 	}
 }
