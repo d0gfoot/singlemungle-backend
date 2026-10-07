@@ -19,6 +19,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 
 import com.singlemungle.backend.domain.auth.service.JwtTokenService;
 import com.singlemungle.backend.domain.user.entity.UserRole;
@@ -46,7 +50,8 @@ class CareControllerTest {
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
 			.andExpect(jsonPath("$.data.length()").value(1))
 			.andExpect(jsonPath("$.data[0].petId").value(101))
-			.andExpect(jsonPath("$.data[0].name").value("초코"));
+			.andExpect(jsonPath("$.data[0].name").value("초코"))
+			.andExpect(jsonPath("$.data[0].profileImageUrl").doesNotExist());
 	}
 
 	@Test
@@ -75,6 +80,7 @@ class CareControllerTest {
 					  "breed": "포메라니안",
 					  "birthDate": "2022-03-04",
 					  "weight": 2.8,
+					  "profileImageUrl": "https://example.com/pets/mongi.jpg",
 					  "memo": "작고 활발함"
 					}
 					"""))
@@ -90,7 +96,9 @@ class CareControllerTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.data.length()").value(2))
 			.andExpect(jsonPath("$.data[?(@.petId == %d)].name", petId).value(contains("몽이")))
-			.andExpect(jsonPath("$.data[?(@.petId == %d)].breed", petId).value(contains("포메라니안")));
+			.andExpect(jsonPath("$.data[?(@.petId == %d)].breed", petId).value(contains("포메라니안")))
+			.andExpect(jsonPath("$.data[?(@.petId == %d)].profileImageUrl", petId)
+				.value(contains("https://example.com/pets/mongi.jpg")));
 	}
 
 	@Test
@@ -102,6 +110,7 @@ class CareControllerTest {
 					{
 					  "name": "초코수정",
 					  "weight": 4.9,
+					  "profileImageUrl": "https://example.com/pets/choco-updated.jpg",
 					  "memo": "체중 관리 중"
 					}
 					"""))
@@ -112,7 +121,123 @@ class CareControllerTest {
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.data[0].petId").value(101))
-			.andExpect(jsonPath("$.data[0].name").value("초코수정"));
+			.andExpect(jsonPath("$.data[0].name").value("초코수정"))
+			.andExpect(jsonPath("$.data[0].profileImageUrl")
+				.value("https://example.com/pets/choco-updated.jpg"));
+	}
+
+	@Test
+	void updatePetRejectsAnotherUsersPet() throws Exception {
+		mockMvc.perform(patch("/api/v1/pets/{petId}", 102)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+					{
+					  "name": "변경 불가"
+					}
+					"""))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("PET_NOT_FOUND"));
+	}
+
+	@Test
+	void uploadProfileImageStoresImageForOwnedPet() throws Exception {
+		MockMultipartFile image = new MockMultipartFile(
+			"image", "choco.png", MediaType.IMAGE_PNG_VALUE, new byte[] {1, 2, 3});
+		MockMultipartHttpServletRequestBuilder request = multipart("/api/v1/pets/{petId}/profile-image", 101)
+			.file(image);
+		request.with(httpRequest -> {
+			httpRequest.setMethod("PUT");
+			return httpRequest;
+		});
+
+		MvcResult result = mockMvc.perform(request.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("SUCCESS"))
+			.andExpect(jsonPath("$.data.profileImageUrl").isString())
+			.andReturn();
+
+		String imageUrl = JsonPath.read(result.getResponse().getContentAsString(), "$.data.profileImageUrl");
+		mockMvc.perform(get(imageUrl)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isOk())
+			.andExpect(resultMatcher -> org.junit.jupiter.api.Assertions.assertArrayEquals(
+				new byte[] {1, 2, 3}, resultMatcher.getResponse().getContentAsByteArray()));
+
+		mockMvc.perform(get("/api/v1/pets")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data[0].profileImageUrl").value(imageUrl));
+	}
+
+	@Test
+	void uploadProfileImageRejectsAnotherUsersPet() throws Exception {
+		MockMultipartFile image = new MockMultipartFile(
+			"image", "latte.png", MediaType.IMAGE_PNG_VALUE, new byte[] {1, 2, 3});
+		MockMultipartHttpServletRequestBuilder request = multipart("/api/v1/pets/{petId}/profile-image", 102)
+			.file(image);
+		request.with(httpRequest -> {
+			httpRequest.setMethod("PUT");
+			return httpRequest;
+		});
+
+		mockMvc.perform(request.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("PET_NOT_FOUND"));
+	}
+
+	@Test
+	void uploadProfileImageRejectsUnsupportedContentType() throws Exception {
+		MockMultipartFile image = new MockMultipartFile(
+			"image", "choco.gif", MediaType.IMAGE_GIF_VALUE, new byte[] {1, 2, 3});
+		MockMultipartHttpServletRequestBuilder request = multipart("/api/v1/pets/{petId}/profile-image", 101)
+			.file(image);
+		request.with(httpRequest -> {
+			httpRequest.setMethod("PUT");
+			return httpRequest;
+		});
+
+		mockMvc.perform(request.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+	}
+
+	@Test
+	void deleteProfileImageClearsOwnedPetImage() throws Exception {
+		MockMultipartFile image = new MockMultipartFile(
+			"image", "choco.png", MediaType.IMAGE_PNG_VALUE, new byte[] {1, 2, 3});
+		MockMultipartHttpServletRequestBuilder uploadRequest = multipart(
+			"/api/v1/pets/{petId}/profile-image", 101).file(image);
+		uploadRequest.with(httpRequest -> {
+			httpRequest.setMethod("PUT");
+			return httpRequest;
+		});
+		MvcResult uploadResult = mockMvc.perform(uploadRequest.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isOk())
+			.andReturn();
+		String imageUrl = JsonPath.read(uploadResult.getResponse().getContentAsString(), "$.data.profileImageUrl");
+
+		mockMvc.perform(delete("/api/v1/pets/{petId}/profile-image", 101)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("SUCCESS"));
+
+		mockMvc.perform(get("/api/v1/pets")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data[0].profileImageUrl").doesNotExist());
+
+		mockMvc.perform(get(imageUrl)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void deleteProfileImageRejectsAnotherUsersPet() throws Exception {
+		mockMvc.perform(delete("/api/v1/pets/{petId}/profile-image", 102)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("PET_NOT_FOUND"));
 	}
 
 	@Test

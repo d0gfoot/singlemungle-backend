@@ -42,7 +42,8 @@ class UserControllerTest {
 			.andExpect(jsonPath("$.code").value("SUCCESS"))
 			.andExpect(jsonPath("$.data.userId").value(1))
 			.andExpect(jsonPath("$.data.nickname").value("보호자1"))
-			.andExpect(jsonPath("$.data.phone").value("010-1111-1111"));
+			.andExpect(jsonPath("$.data.phone").value("010-1111-1111"))
+			.andExpect(jsonPath("$.data.profileImageUrl").value("https://example.com/users/1.jpg"));
 	}
 
 	@Test
@@ -53,7 +54,8 @@ class UserControllerTest {
 				.content("""
 					{
 					  "nickname": "수정보호자",
-					  "phone": "010-9999-9999"
+					  "phone": "010-9999-9999",
+					  "profileImageUrl": "https://example.com/users/updated.jpg"
 					}
 					"""))
 			.andExpect(status().isOk())
@@ -63,7 +65,8 @@ class UserControllerTest {
 				.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.data.nickname").value("수정보호자"))
-			.andExpect(jsonPath("$.data.phone").value("010-9999-9999"));
+			.andExpect(jsonPath("$.data.phone").value("010-9999-9999"))
+			.andExpect(jsonPath("$.data.profileImageUrl").value("https://example.com/users/updated.jpg"));
 	}
 
 	@Test

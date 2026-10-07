@@ -31,9 +31,7 @@ public class UserService {
         User u = findActiveUser(userId);
         if (nickname != null) u.setNickname(nickname);
         if (phone != null) u.setPhone(phone);
-        if (profileImageUrl != null) {
-            u.setProfileImageUrl(profileImageUrl);
-        }
+        if (profileImageUrl != null) u.setProfileImageUrl(profileImageUrl);
         u.setUpdatedAt(LocalDateTime.now());
     }
 

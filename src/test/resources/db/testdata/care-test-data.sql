@@ -2,12 +2,13 @@ insert into users (
 	id,
 	nickname,
 	phone,
+	profile_image_url,
 	created_at,
 	updated_at,
 	deleted_at
 ) values
-	(1, '보호자1', '010-1111-1111', current_timestamp, current_timestamp, null),
-	(2, '보호자2', '010-2222-2222', current_timestamp, current_timestamp, null);
+	(1, '보호자1', '010-1111-1111', 'https://example.com/users/1.jpg', current_timestamp, current_timestamp, null),
+	(2, '보호자2', '010-2222-2222', null, current_timestamp, current_timestamp, null);
 
 insert into pets (
 	id,
