@@ -1,5 +1,7 @@
 package com.singlemungle.backend.domain.auth.controller;
 
+import java.time.LocalDateTime;
+
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -21,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,6 +39,9 @@ class AuthControllerTest {
 
 	@Autowired
 	private JwtTokenService jwtTokenService;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@MockBean
 	private OAuthClientResolver oauthClientResolver;
@@ -67,6 +73,59 @@ class AuthControllerTest {
 			.andExpect(jsonPath("$.data.tokenType").value("Bearer"))
 			.andExpect(jsonPath("$.data.expiresIn").value(3600))
 			.andExpect(jsonPath("$.data.isNewUser").value(true));
+	}
+
+	@Test
+	void oauthLoginReactivatesSoftDeletedUser() throws Exception {
+		jdbcTemplate.update("""
+			insert into users (
+				id, oauth_provider, oauth_provider_id, email, nickname, role,
+				created_at, updated_at, deleted_at
+			) values (?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp, current_timestamp)
+			""", 10L, "KAKAO", "withdrawn-kakao-user", "old@example.com", "탈퇴사용자", "USER");
+		jdbcTemplate.update("""
+			insert into refresh_tokens (user_id, token, expires_at, created_at)
+			values (?, ?, ?, ?)
+			""", 10L, "old-refresh-token", LocalDateTime.now().plusDays(1), LocalDateTime.now());
+
+		OAuthClient kakaoOAuthClient = org.mockito.Mockito.mock(KakaoOAuthClient.class);
+		when(oauthClientResolver.resolve(OAuthProvider.KAKAO)).thenReturn(kakaoOAuthClient);
+		when(kakaoOAuthClient.fetchUserInfo(anyString())).thenReturn(new OAuthUserInfo(
+			OAuthProvider.KAKAO,
+			"withdrawn-kakao-user",
+			"restored@example.com",
+			"복구보호자",
+			"https://image.example.com/restored.png"
+		));
+
+		mockMvc.perform(post("/api/v1/auth/oauth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+					{
+					  "provider": "KAKAO",
+					  "providerToken": "kakao-provider-token"
+					}
+					"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("SUCCESS"))
+			.andExpect(jsonPath("$.data.isNewUser").value(false));
+
+		Integer userCount = jdbcTemplate.queryForObject(
+			"select count(*) from users where oauth_provider = 'KAKAO' and oauth_provider_id = 'withdrawn-kakao-user'",
+			Integer.class
+		);
+		Integer activeUserCount = jdbcTemplate.queryForObject(
+			"select count(*) from users where id = 10 and deleted_at is null and email = 'restored@example.com'",
+			Integer.class
+		);
+		Integer refreshTokenCount = jdbcTemplate.queryForObject(
+			"select count(*) from refresh_tokens where user_id = 10",
+			Integer.class
+		);
+
+		org.assertj.core.api.Assertions.assertThat(userCount).isEqualTo(1);
+		org.assertj.core.api.Assertions.assertThat(activeUserCount).isEqualTo(1);
+		org.assertj.core.api.Assertions.assertThat(refreshTokenCount).isEqualTo(1);
 	}
 
 	@Test

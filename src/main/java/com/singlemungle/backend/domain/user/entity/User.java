@@ -114,4 +114,9 @@ public class User {
 		this.deletedAt = LocalDateTime.now();
 		this.updatedAt = LocalDateTime.now();
 	}
+
+	public void reactivate() {
+		this.deletedAt = null;
+		this.updatedAt = LocalDateTime.now();
+	}
 }

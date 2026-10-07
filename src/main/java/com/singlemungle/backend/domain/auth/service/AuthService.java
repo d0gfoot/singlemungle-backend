@@ -35,8 +35,8 @@ public class AuthService {
 		OAuthClient oauthClient = oauthClientResolver.resolve(request.provider());
 		OAuthUserInfo userInfo = oauthClient.fetchUserInfo(request.providerToken());
 
-		Optional<User> existingUser = userRepository.findByOauthProviderAndOauthProviderIdAndDeletedAtIsNull(
-			userInfo.provider(),
+		Optional<User> existingUser = userRepository.findByOauthIdentityIncludingDeleted(
+			userInfo.provider().name(),
 			userInfo.providerUserId()
 		);
 		boolean isNewUser = existingUser.isEmpty();
@@ -50,6 +50,9 @@ public class AuthService {
 			)));
 
 		if (!isNewUser) {
+			if (user.getDeletedAt() != null) {
+				user.reactivate();
+			}
 			user.updateOAuthProfile(userInfo.email(), userInfo.nickname(), userInfo.profileImageUrl());
 		}
 		return issueTokens(user, isNewUser);
