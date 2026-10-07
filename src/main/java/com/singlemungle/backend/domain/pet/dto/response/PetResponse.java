@@ -25,6 +25,8 @@ public record PetResponse(
 	@Schema(description = "나이", example = "6")
 	Integer age,
 	@Schema(description = "대표 반려동물 여부", example = "true")
-	Boolean isRepresentative
+	Boolean isRepresentative,
+    @Schema(description = "프로필 이미지 URL", example = "https://example.com/pet/profile.jpg")
+    String profileImageUrl
 ) {
 }

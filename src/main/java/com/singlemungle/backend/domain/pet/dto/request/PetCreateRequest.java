@@ -21,6 +21,8 @@ public record PetCreateRequest(
 	@Positive Double weight,
     @Schema(description = "중성화 여부", example = "true")
     Boolean neutered,
+    @Schema(description = "프로필 이미지 URL", example = "https://example.com/pet/profile.jpg")
+    String profileImageUrl,
 	@Schema(description = "메모", example = "활발하고 산책을 좋아함")
 	@Size(max = 1000) String memo
 ) {

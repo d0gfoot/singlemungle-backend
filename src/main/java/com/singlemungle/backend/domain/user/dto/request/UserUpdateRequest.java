@@ -8,8 +8,6 @@ public record UserUpdateRequest(
 	@Schema(description = "닉네임", example = "멍글보호자")
 	@Size(max = 50) String nickname,
 	@Schema(description = "전화번호", example = "010-1234-5678")
-	@Size(max = 30) String phone,
-    @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile/1.jpg"
-    ) String profileImageUrl
+	@Size(max = 30) String phone
 ) {
 }

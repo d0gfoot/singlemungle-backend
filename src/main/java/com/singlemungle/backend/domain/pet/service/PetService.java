@@ -36,7 +36,8 @@ public class PetService {
                         p.getMemo(),
                         p.getNeutered(),
                         calculateAge(p.getBirthDate()),
-                        p.getIsRepresentative()
+                        p.getIsRepresentative(),
+                        p.getProfileImageUrl()
                 ))
                 .toList();
     }
@@ -52,7 +53,7 @@ public class PetService {
         p.setWeight(req.weight());
         p.setMemo(req.memo());
         p.setNeutered(req.neutered());
-
+        p.setProfileImageUrl(req.profileImageUrl());
         p.setIsRepresentative(petRepo.findByUserId(userId).isEmpty());
 
         return petRepo.save(p).getId();
@@ -69,6 +70,7 @@ public class PetService {
         if (req.weight() != null) p.setWeight(req.weight());
         if (req.memo() != null) p.setMemo(req.memo());
         if (req.neutered() != null) p.setNeutered(req.neutered());
+        if (req.profileImageUrl() != null) p.setProfileImageUrl(req.profileImageUrl());
 
         p.setUpdatedAt(LocalDateTime.now());
     }

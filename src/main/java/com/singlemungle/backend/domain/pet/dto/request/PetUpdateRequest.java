@@ -20,6 +20,8 @@ public record PetUpdateRequest(
 	@Positive Double weight,
     @Schema(description = "중성화 여부", example = "true")
     Boolean neutered,
+    @Schema(description = "프로필 이미지 URL", example = "https://example.com/pet/profile.jpg")
+    String profileImageUrl,
 	@Schema(description = "메모", example = "최근 체중 증가")
 	@Size(max = 1000) String memo
 ) {
