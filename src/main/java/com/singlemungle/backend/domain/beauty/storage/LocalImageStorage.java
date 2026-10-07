@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class LocalImageStorage implements ImageStorage {
+	private static final String LEGACY_BASE_URL = "/api/v1/beauty/style-simulations/images";
 
 	private static final Map<String, String> EXTENSIONS = Map.of(
 		"image/jpeg", ".jpg",
@@ -68,11 +69,11 @@ public class LocalImageStorage implements ImageStorage {
 
 	@Override
 	public void delete(String imageUrl) {
-		if (imageUrl == null || imageUrl.isBlank() || !imageUrl.startsWith(baseUrl + "/")) {
+		String fileName = fileNameFrom(imageUrl);
+		if (fileName == null) {
 			return;
 		}
 
-		String fileName = imageUrl.substring((baseUrl + "/").length());
 		Path path = directory.resolve(fileName).normalize();
 		if (!path.startsWith(directory.normalize())) {
 			return;
@@ -90,15 +91,28 @@ public class LocalImageStorage implements ImageStorage {
 	}
 
 	private Path resolveImageUrl(String imageUrl) {
-		if (imageUrl == null || !imageUrl.startsWith(baseUrl + "/")) {
+		String fileName = fileNameFrom(imageUrl);
+		if (fileName == null) {
 			throw new BusinessException(ErrorCode.STYLE_SIMULATION_NOT_FOUND);
 		}
-		String fileName = imageUrl.substring((baseUrl + "/").length());
 		Path path = directory.resolve(fileName).normalize();
 		if (!path.startsWith(directory.normalize()) || !Files.exists(path)) {
 			throw new BusinessException(ErrorCode.STYLE_SIMULATION_NOT_FOUND);
 		}
 		return path;
+	}
+
+	private String fileNameFrom(String imageUrl) {
+		if (imageUrl == null || imageUrl.isBlank()) {
+			return null;
+		}
+		for (String supportedBaseUrl : new String[] {baseUrl, LEGACY_BASE_URL}) {
+			String prefix = supportedBaseUrl + "/";
+			if (imageUrl.startsWith(prefix)) {
+				return imageUrl.substring(prefix.length());
+			}
+		}
+		return null;
 	}
 
 	private String mimeType(String fileName) {
