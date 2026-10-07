@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.singlemungle.backend.common.exception.BusinessException;
 import com.singlemungle.backend.common.exception.ErrorCode;
+import com.singlemungle.backend.domain.auth.repository.RefreshTokenRepository;
 import com.singlemungle.backend.domain.user.dto.response.UserInfoResponse;
 import com.singlemungle.backend.domain.user.entity.User;
 import com.singlemungle.backend.domain.user.repository.UserRepository;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepo;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional(readOnly = true)
     public UserInfoResponse getUserInfo(Long userId) {
@@ -38,7 +40,8 @@ public class UserService {
     @Transactional
     public void deleteUser(Long userId) {
         User u = findActiveUser(userId);
-        u.setDeletedAt(LocalDateTime.now());
+        refreshTokenRepository.deleteByUserId(userId);
+        u.delete();
     }
 
     private User findActiveUser(Long userId) {
